@@ -1,5 +1,6 @@
 package com.example.smart_morocco.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.List;
 
@@ -21,15 +22,19 @@ public class Pack {
     private Double promotion;
 
     @OneToMany(mappedBy = "pack")
+    @JsonIgnore
     private List<Hotel> hotels;
 
     @OneToMany(mappedBy = "pack")
+    @JsonIgnore
     private List<Restaurant> restaurants;
 
     @OneToMany(mappedBy = "pack")
+    @JsonIgnore
     private List<Evenement> evenements;
 
     @OneToMany(mappedBy = "pack")
+    @JsonIgnore
     private List<Reservation> reservations;
 
     // Getters & Setters

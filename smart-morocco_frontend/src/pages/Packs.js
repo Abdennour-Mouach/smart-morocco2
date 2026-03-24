@@ -5,7 +5,6 @@ import {
   Filter, 
   SlidersHorizontal,
   X,
-  ChevronDown,
   Star,
   MapPin,
   Calendar,

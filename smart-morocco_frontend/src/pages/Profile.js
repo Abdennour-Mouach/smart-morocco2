@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
   User,
@@ -34,6 +34,12 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: ""
+  });
   
   // Données modifiables
   const [editedUser, setEditedUser] = useState({
@@ -41,9 +47,6 @@ const Profile = () => {
     prenom: "",
     email: "",
     telephone: "",
-    ville: "",
-    date_naissance: "",
-    bio: ""
   });
 
   // Statistiques utilisateur
@@ -59,27 +62,47 @@ const Profile = () => {
     loadUserProfile();
   }, []);
 
-  const loadUserProfile = () => {
+  const loadUserProfile = async () => {
     const userData = localStorage.getItem("user");
     if (userData) {
       const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      setEditedUser({
-        nom: parsedUser.nom || "",
-        prenom: parsedUser.prenom || "",
-        email: parsedUser.email || "",
-        telephone: parsedUser.telephone || "",
-        ville: parsedUser.ville || "",
-        date_naissance: parsedUser.date_naissance || "",
-        bio: parsedUser.bio || "Passionné de voyages et de découvertes culturelles"
-      });
+      try {
+        if (parsedUser.id_utilisateur) {
+          const res = await api.get(`/utilisateurs/${parsedUser.id_utilisateur}`);
+          const freshUser = res.data;
+          setUser(freshUser);
+          setEditedUser({
+            nom: freshUser.nom || "",
+            prenom: freshUser.prenom || "",
+            email: freshUser.email || "",
+            telephone: freshUser.telephone || ""
+          });
+          localStorage.setItem("user", JSON.stringify(freshUser));
+        } else {
+          setUser(parsedUser);
+          setEditedUser({
+            nom: parsedUser.nom || "",
+            prenom: parsedUser.prenom || "",
+            email: parsedUser.email || "",
+            telephone: parsedUser.telephone || ""
+          });
+        }
+      } catch (error) {
+        setUser(parsedUser);
+        setEditedUser({
+          nom: parsedUser.nom || "",
+          prenom: parsedUser.prenom || "",
+          email: parsedUser.email || "",
+          telephone: parsedUser.telephone || ""
+        });
+      }
       
       // Simuler le chargement des statistiques
       setStats({
-        reservations: 12,
-        avis: 8,
-        joursVoyages: 45,
-        paysVisites: 15,
+        reservations: 0,
+        avis: 0,
+        joursVoyages: 0,
+        paysVisites: 0,
         badges: [
           { id: 1, name: "Explorateur", icon: <Award size={20} />, color: "#ffb84d" },
           { id: 2, name: "Guide Local", icon: <Star size={20} />, color: "#0f4c75" },
@@ -98,11 +121,18 @@ const Profile = () => {
     }));
   };
 
+  const handlePasswordChangeInput = (e) => {
+    const { name, value } = e.target;
+    setPasswordForm(prev => ({ ...prev, [name]: value }));
+  };
+
   const handleSaveProfile = async () => {
     setIsLoading(true);
     try {
       // Appel API pour mettre à jour le profil
-      // await api.put(`/utilisateurs/${user.id_utilisateur}`, editedUser);
+      if (user?.id_utilisateur) {
+        await api.put(`/utilisateurs/${user.id_utilisateur}`, editedUser);
+      }
       
       // Mettre à jour le localStorage
       const updatedUser = { ...user, ...editedUser };
@@ -128,9 +158,7 @@ const Profile = () => {
       prenom: user.prenom || "",
       email: user.email || "",
       telephone: user.telephone || "",
-      ville: user.ville || "",
-      date_naissance: user.date_naissance || "",
-      bio: user.bio || "Passionné de voyages et de découvertes culturelles"
+     
     });
     setIsEditing(false);
   };
@@ -138,6 +166,34 @@ const Profile = () => {
   const handleLogout = () => {
     localStorage.removeItem("user");
     window.location.href = "/";
+  };
+
+  const handleChangePassword = async () => {
+    if (!passwordForm.currentPassword || !passwordForm.newPassword) {
+      setMessage("Veuillez remplir tous les champs du mot de passe");
+      setMessageType("error");
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setMessage("La confirmation du mot de passe ne correspond pas");
+      setMessageType("error");
+      return;
+    }
+    try {
+      if (user?.id_utilisateur) {
+        await api.post(`/utilisateurs/${user.id_utilisateur}/password`, {
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword
+        });
+        setMessage("Mot de passe mis à jour avec succès !");
+        setMessageType("success");
+        setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+        setShowPasswordForm(false);
+      }
+    } catch (error) {
+      setMessage("Erreur lors de la mise à jour du mot de passe");
+      setMessageType("error");
+    }
   };
 
   if (isLoading) {
@@ -483,66 +539,12 @@ const Profile = () => {
                     )}
                   </div>
 
-                  <div className="form-group">
-                    <label>
-                      <MapPin size={16} />
-                      Ville
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        name="ville"
-                        value={editedUser.ville}
-                        onChange={handleInputChange}
-                        className="form-input"
-                        placeholder="Votre ville"
-                      />
-                    ) : (
-                      <p className="form-value">{user.ville || "Non renseignée"}</p>
-                    )}
-                  </div>
+                 
                 </div>
 
-                <div className="form-group">
-                  <label>
-                    <Calendar size={16} />
-                    Date de naissance
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="date"
-                      name="date_naissance"
-                      value={editedUser.date_naissance}
-                      onChange={handleInputChange}
-                      className="form-input"
-                    />
-                  ) : (
-                    <p className="form-value">
-                      {user.date_naissance 
-                        ? new Date(user.date_naissance).toLocaleDateString('fr-FR') 
-                        : "Non renseignée"}
-                    </p>
-                  )}
-                </div>
+               
 
-                <div className="form-group">
-                  <label>
-                    <MessageCircle size={16} />
-                    Bio
-                  </label>
-                  {isEditing ? (
-                    <textarea
-                      name="bio"
-                      value={editedUser.bio}
-                      onChange={handleInputChange}
-                      className="form-textarea"
-                      rows="4"
-                      placeholder="Parlez-nous de vous..."
-                    />
-                  ) : (
-                    <p className="form-value bio">{user.bio || "Aucune bio renseignée"}</p>
-                  )}
-                </div>
+                
               </div>
             </div>
           )}
@@ -566,10 +568,55 @@ const Profile = () => {
                     disabled
                     className="password-input"
                   />
-                  <button className="change-password-btn">
+                  <button
+                    className="change-password-btn"
+                    onClick={() => setShowPasswordForm(!showPasswordForm)}
+                  >
                     Changer
                   </button>
                 </div>
+                {showPasswordForm && (
+                  <div className="password-form">
+                    <input
+                      type="password"
+                      name="currentPassword"
+                      placeholder="Mot de passe actuel"
+                      value={passwordForm.currentPassword}
+                      onChange={handlePasswordChangeInput}
+                      className="form-input"
+                    />
+                    <input
+                      type="password"
+                      name="newPassword"
+                      placeholder="Nouveau mot de passe"
+                      value={passwordForm.newPassword}
+                      onChange={handlePasswordChangeInput}
+                      className="form-input"
+                    />
+                    <input
+                      type="password"
+                      name="confirmPassword"
+                      placeholder="Confirmer le nouveau mot de passe"
+                      value={passwordForm.confirmPassword}
+                      onChange={handlePasswordChangeInput}
+                      className="form-input"
+                    />
+                    <div className="password-actions">
+                      <button className="save-btn" onClick={handleChangePassword}>
+                        Enregistrer
+                      </button>
+                      <button
+                        className="cancel-btn"
+                        onClick={() => {
+                          setShowPasswordForm(false);
+                          setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+                        }}
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <p className="password-hint">
                   Dernière modification : il y a 3 mois
                 </p>
@@ -1145,6 +1192,17 @@ const Profile = () => {
           background: #f8f9fa;
           padding: 10px;
           border-radius: 12px;
+        }
+
+        .password-form {
+          margin-top: 15px;
+          display: grid;
+          gap: 10px;
+        }
+
+        .password-actions {
+          display: flex;
+          gap: 10px;
         }
 
         .password-input {

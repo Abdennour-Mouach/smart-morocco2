@@ -1,19 +1,55 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Compass, User, Star, Calendar, Package } from "lucide-react";
+import { Menu, X, User, Calendar, ChevronDown, Settings, LogOut } from "lucide-react";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [user, setUser] = useState(null);
   const location = useLocation();
+  const profileMenuRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      const userData = localStorage.getItem("user");
+      setUser(userData ? JSON.parse(userData) : null);
+    } catch {
+      setUser(null);
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    setIsProfileMenuOpen(false);
+    window.location.href = "/";
+  };
 
   const navLinks = [
-    { path: "/", label: "Accueil", icon: <Compass size={20} /> },
-    { path: "/packs", label: "Packs", icon: <Package size={20} /> },
-    { path: "/reservation", label: "Réservation", icon: <Calendar size={20} /> },
-    { path: "/review", label: "Avis", icon: <Star size={20} /> },
-    { path: "/Profile", label: "Profil", icon: <User size={20} /> },
-    { path: "/login", label: "Connexion", icon: <User size={20} /> },
+    { path: "/", label: "Accueil" },
+    { path: "/about", label: "A propos" },
+    { path: "/contact", label: "Contact" },
+    { path: "/packs", label: "Packs" },
+    { path: "/reservation", label: "Reservation" }
   ];
+
+  const mobileAuthLinks = user
+    ? [{ path: "/Profile", label: "Profil" }]
+    : [
+        { path: "/login", label: "Connexion" },
+        { path: "/register", label: "Inscription" }
+      ];
 
   const isActive = (path) => location.pathname === path;
 
@@ -22,8 +58,7 @@ const Navbar = () => {
       <div className="navbar-container">
         {/* Logo */}
         <Link to="/" className="logo">
-          <span className="logo-icon">ⵣ</span>
-          <span className="logo-text">Smart<span className="logo-highlight">Morocco</span></span>
+          <img src="images/logo.png" alt="Smart Morocco" className="logo-img" />
         </Link>
 
         {/* Desktop Menu */}
@@ -34,11 +69,65 @@ const Navbar = () => {
               to={link.path}
               className={`nav-link ${isActive(link.path) ? "active" : ""}`}
             >
-              <span className="nav-icon">{link.icon}</span>
               <span>{link.label}</span>
-              {isActive(link.path) && <span className="active-dot"></span>}
             </Link>
           ))}
+        </div>
+
+        {/* Profil utilisateur */}
+        <div className="profile-section" ref={profileMenuRef}>
+          {user ? (
+            <div className="profile-container">
+              <button
+                className="profile-button"
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+              >
+                <div className="profile-avatar">
+                  {user.prenom?.charAt(0)}{user.nom?.charAt(0)}
+                </div>
+                <span className="profile-name">{user.prenom} {user.nom}</span>
+                <ChevronDown size={16} className={`chevron ${isProfileMenuOpen ? "open" : ""}`} />
+              </button>
+
+              {isProfileMenuOpen && (
+                <div className="profile-menu">
+                  <div className="menu-header">
+                    <div className="menu-avatar">
+                      {user.prenom?.charAt(0)}{user.nom?.charAt(0)}
+                    </div>
+                    <div className="menu-user-info">
+                      <span className="menu-user-name">{user.prenom} {user.nom}</span>
+                      <span className="menu-user-email">{user.email}</span>
+                    </div>
+                  </div>
+                  <div className="menu-items">
+                    <Link to="/profile" className="menu-item">
+                      <User size={16} />
+                      <span>Mon Profil</span>
+                    </Link>
+                    <Link to="/reservation" className="menu-item">
+                      <Calendar size={16} />
+                      <span>Mes Reservations</span>
+                    </Link>
+                    <Link to="/settings" className="menu-item">
+                      <Settings size={16} />
+                      <span>Parametres</span>
+                    </Link>
+                    <div className="menu-divider"></div>
+                    <button onClick={handleLogout} className="menu-item logout">
+                      <LogOut size={16} />
+                      <span>Deconnexion</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="auth-buttons">
+              <Link to="/login" className="login-btn-nav">Connexion</Link>
+              <Link to="/register" className="register-btn-nav">Inscription</Link>
+            </div>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -49,14 +138,13 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       <div className={`mobile-menu ${isOpen ? "open" : ""}`}>
-        {navLinks.map((link) => (
+        {navLinks.concat(mobileAuthLinks).map((link) => (
           <Link
             key={link.path}
             to={link.path}
             className={`mobile-link ${isActive(link.path) ? "active" : ""}`}
             onClick={() => setIsOpen(false)}
           >
-            <span className="mobile-icon">{link.icon}</span>
             <span>{link.label}</span>
           </Link>
         ))}
@@ -68,11 +156,9 @@ const Navbar = () => {
           top: 0;
           left: 0;
           right: 0;
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(10px);
-          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+          background: white;
+          box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
           z-index: 1000;
-          border-bottom: 1px solid rgba(15, 76, 117, 0.1);
         }
 
         .navbar-container {
@@ -82,120 +168,211 @@ const Navbar = () => {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          gap: 1rem;
         }
 
-        /* Logo Styles */
         .logo {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
           text-decoration: none;
-          transition: transform 0.3s ease;
         }
 
-        .logo:hover {
-          transform: scale(1.05);
+        .logo-img {
+          width: 150px;
+          height: 100px;
+          object-fit: contain;
         }
 
-        .logo-icon {
-          font-size: 2rem;
-          color: #0f4c75;
-          animation: spin 20s linear infinite;
-        }
-
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        .logo-text {
-          font-size: 1.5rem;
-          font-weight: 600;
-          color: #1e272e;
-        }
-
-        .logo-highlight {
-          color: #0f4c75;
-          font-weight: 700;
-          position: relative;
-        }
-
-        .logo-highlight::after {
-          content: '';
-          position: absolute;
-          bottom: -2px;
-          left: 0;
-          width: 100%;
-          height: 2px;
-          background: linear-gradient(90deg, #0f4c75, #00b8b0);
-          transform: scaleX(0);
-          transition: transform 0.3s ease;
-        }
-
-        .logo:hover .logo-highlight::after {
-          transform: scaleX(1);
-        }
-
-        /* Desktop Menu */
         .nav-links {
           display: flex;
-          gap: 1rem;
-          align-items: center;
+          gap: 2rem;
         }
 
         .nav-link {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.7rem 1.2rem;
           color: #1e272e;
           text-decoration: none;
           font-weight: 500;
-          border-radius: 12px;
-          transition: all 0.3s ease;
-          position: relative;
+          transition: color 0.3s ease;
         }
 
-        .nav-icon {
-          display: flex;
-          align-items: center;
-          transition: transform 0.3s ease;
-        }
-
-        .nav-link:hover {
-          background: linear-gradient(135deg, rgba(15, 76, 117, 0.1), rgba(0, 184, 176, 0.1));
+        .nav-link:hover,
+        .nav-link.active {
           color: #0f4c75;
         }
 
-        .nav-link:hover .nav-icon {
-          transform: translateY(-2px);
+        /* Profile Section */
+        .profile-section {
+          position: relative;
         }
 
-        .nav-link.active {
-          background: linear-gradient(135deg, #0f4c75, #00b8b0);
-          color: white;
-          box-shadow: 0 4px 15px rgba(15, 76, 117, 0.3);
+        .auth-buttons {
+          display: flex;
+          gap: 10px;
         }
 
-        .active-dot {
-          position: absolute;
-          bottom: -5px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 4px;
-          height: 4px;
+        .login-btn-nav {
+          padding: 8px 20px;
           background: white;
+          border: 2px solid #0f4c75;
+          color: #0f4c75;
+          text-decoration: none;
+          border-radius: 50px;
+          font-weight: 600;
+          transition: all 0.3s ease;
+        }
+
+        .login-btn-nav:hover {
+          background: #0f4c75;
+          color: white;
+        }
+
+        .register-btn-nav {
+          padding: 8px 20px;
+          background: linear-gradient(135deg, #0f4c75, #bf5700);
+          color: white;
+          text-decoration: none;
+          border-radius: 50px;
+          font-weight: 600;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .register-btn-nav:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 5px 15px rgba(191, 87, 0, 0.3);
+        }
+
+        .profile-container {
+          position: relative;
+        }
+
+        .profile-button {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 5px 15px;
+          background: white;
+          border: 2px solid #eaeaea;
+          border-radius: 50px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .profile-button:hover {
+          border-color: #0f4c75;
+        }
+
+        .profile-avatar {
+          width: 35px;
+          height: 35px;
+          background: linear-gradient(135deg, #0f4c75, #bf5700);
           border-radius: 50%;
-          animation: pulse 2s infinite;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-weight: 600;
+          text-transform: uppercase;
         }
 
-        @keyframes pulse {
-          0% { transform: translateX(-50%) scale(1); opacity: 1; }
-          50% { transform: translateX(-50%) scale(1.5); opacity: 0.5; }
-          100% { transform: translateX(-50%) scale(1); opacity: 1; }
+        .profile-name {
+          font-weight: 500;
+          color: #1e272e;
         }
 
-        /* Mobile Menu Button */
+        .chevron {
+          transition: transform 0.3s ease;
+        }
+
+        .chevron.open {
+          transform: rotate(180deg);
+        }
+
+        .profile-menu {
+          position: absolute;
+          top: 60px;
+          right: 0;
+          width: 280px;
+          background: white;
+          border-radius: 16px;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+          overflow: hidden;
+          animation: slideDown 0.3s ease;
+        }
+
+        .menu-header {
+          padding: 20px;
+          background: linear-gradient(135deg, #0f4c75, #bf5700);
+          color: white;
+          display: flex;
+          align-items: center;
+          gap: 15px;
+        }
+
+        .menu-avatar {
+          width: 50px;
+          height: 50px;
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 600;
+          font-size: 1.2rem;
+          text-transform: uppercase;
+          border: 2px solid white;
+        }
+
+        .menu-user-info {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .menu-user-name {
+          font-weight: 600;
+          margin-bottom: 5px;
+        }
+
+        .menu-user-email {
+          font-size: 0.8rem;
+          opacity: 0.9;
+        }
+
+        .menu-items {
+          padding: 10px;
+        }
+
+        .menu-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 15px;
+          color: #1e272e;
+          text-decoration: none;
+          border-radius: 10px;
+          transition: all 0.3s ease;
+          width: 100%;
+          border: none;
+          background: none;
+          cursor: pointer;
+          font-size: 0.95rem;
+        }
+
+        .menu-item:hover {
+          background: #f8f9fa;
+          color: #0f4c75;
+        }
+
+        .menu-item.logout:hover {
+          color: #dc3545;
+        }
+
+        .menu-divider {
+          height: 1px;
+          background: #eaeaea;
+          margin: 10px 0;
+        }
+
+        /* Mobile */
         .mobile-menu-btn {
           display: none;
           background: none;
@@ -211,7 +388,6 @@ const Navbar = () => {
           background: rgba(15, 76, 117, 0.1);
         }
 
-        /* Mobile Menu */
         .mobile-menu {
           display: none;
           background: white;
@@ -228,7 +404,6 @@ const Navbar = () => {
         .mobile-link {
           display: flex;
           align-items: center;
-          gap: 1rem;
           padding: 1rem;
           color: #1e272e;
           text-decoration: none;
@@ -242,16 +417,21 @@ const Navbar = () => {
         }
 
         .mobile-link.active {
-          background: linear-gradient(135deg, #0f4c75, #00b8b0);
-          color: white;
+          color: #0f4c75;
+          font-weight: 600;
         }
 
-        .mobile-icon {
-          display: flex;
-          align-items: center;
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
-        /* Responsive Design */
         @media (max-width: 768px) {
           .nav-links {
             display: none;
@@ -275,33 +455,15 @@ const Navbar = () => {
             padding: 0.8rem 1.5rem;
           }
 
-          .logo-text {
-            font-size: 1.3rem;
+          .logo-img {
+            width: 70px;
+            height: 70px;
+          }
+
+          .profile-name {
+            display: none;
           }
         }
-
-        /* Animation for mobile menu items */
-        .mobile-menu.open .mobile-link {
-          animation: slideIn 0.3s ease forwards;
-          opacity: 0;
-        }
-
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateX(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        .mobile-menu.open .mobile-link:nth-child(1) { animation-delay: 0.1s; }
-        .mobile-menu.open .mobile-link:nth-child(2) { animation-delay: 0.2s; }
-        .mobile-menu.open .mobile-link:nth-child(3) { animation-delay: 0.3s; }
-        .mobile-menu.open .mobile-link:nth-child(4) { animation-delay: 0.4s; }
-        .mobile-menu.open .mobile-link:nth-child(5) { animation-delay: 0.5s; }
       `}</style>
     </nav>
   );

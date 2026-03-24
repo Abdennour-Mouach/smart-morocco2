@@ -5,11 +5,9 @@ import {
   Mail, 
   Lock, 
   Phone, 
-  MapPin, 
   Eye, 
   EyeOff, 
   ChevronRight,
-  Compass,
   Check,
   AlertCircle
 } from "lucide-react";
@@ -21,7 +19,6 @@ const Register = () => {
     prenom: "",
     email: "",
     telephone: "",
-    ville: "",
     motDePasse: "",
     confirmMotDePasse: ""
   });
@@ -35,14 +32,7 @@ const Register = () => {
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const videoRef = useRef(null);
 
-  // Villes du Maroc pour le select
-  const villesMaroc = [
-    "Casablanca", "Rabat", "Fès", "Marrakech", "Tanger", "Agadir",
-    "Meknès", "Oujda", "Kénitra", "Tétouan", "Safi", "Mohammedia",
-    "El Jadida", "Béni Mellal", "Nador", "Taza", "Settat", "Larache",
-    "Khemisset", "Guelmim", "Berrechid", "Ouarzazate", "Essaouira",
-    "Chefchaouen", "Tiznit", "Al Hoceïma", "Taourirt", "Sidi Kacem"
-  ];
+  
 
   // Lecture automatique de la vidéo
   useEffect(() => {
@@ -75,76 +65,70 @@ const Register = () => {
   };
 
   const handleRegister = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setMessage("");
+  e.preventDefault();
+  setIsLoading(true);
+  setMessage("");
 
-    // Validation des mots de passe
-    if (formData.motDePasse !== formData.confirmMotDePasse) {
-      setMessage("Les mots de passe ne correspondent pas");
-      setMessageType("error");
-      setIsLoading(false);
-      return;
+  // Vérifier les mots de passe
+  if (formData.motDePasse !== formData.confirmMotDePasse) {
+    setMessage("Les mots de passe ne correspondent pas");
+    setMessageType("error");
+    setIsLoading(false);
+    return;
+  }
+
+  // Vérifier la force du mot de passe
+  if (passwordStrength < 50) {
+    setMessage("Le mot de passe est trop faible");
+    setMessageType("error");
+    setIsLoading(false);
+    return;
+  }
+
+  // Vérifier conditions
+  if (!acceptedTerms) {
+    setMessage("Veuillez accepter les conditions d'utilisation");
+    setMessageType("error");
+    setIsLoading(false);
+    return;
+  }
+
+  try {
+
+    const newUser = {
+      nom: formData.nom,
+      prenom: formData.prenom,
+      email: formData.email,
+      telephone: formData.telephone,
+      mot_de_passe: formData.motDePasse,
+      role: "ROLE_USER"
+    };
+
+    await api.post("/utilisateurs", newUser);
+
+    setMessage("Inscription réussie ! Redirection...");
+    setMessageType("success");
+
+    setTimeout(() => {
+      window.location.href = "/login";
+    }, 2000);
+
+  } catch (error) {
+
+    console.error("Erreur inscription :", error);
+
+    if (error.response && error.response.status === 409) {
+      setMessage("Cet email est déjà utilisé");
+    } else {
+      setMessage("Erreur lors de l'inscription. Vérifiez le serveur.");
     }
 
-    // Validation de la force du mot de passe
-    if (passwordStrength < 50) {
-      setMessage("Le mot de passe est trop faible");
-      setMessageType("error");
-      setIsLoading(false);
-      return;
-    }
+    setMessageType("error");
 
-    // Validation des conditions d'utilisation
-    if (!acceptedTerms) {
-      setMessage("Veuillez accepter les conditions d'utilisation");
-      setMessageType("error");
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      // Vérifier si l'email existe déjà
-      const checkEmail = await api.get(`/utilisateurs/email/${formData.email}`);
-      if (checkEmail.data) {
-        setMessage("Cet email est déjà utilisé");
-        setMessageType("error");
-        setIsLoading(false);
-        return;
-      }
-    } catch (error) {
-      // L'email n'existe pas, on peut continuer
-    }
-
-    try {
-      // Créer le nouvel utilisateur
-      const newUser = {
-        nom: formData.nom,
-        prenom: formData.prenom,
-        email: formData.email,
-        telephone: formData.telephone,
-        ville: formData.ville,
-        mot_de_passe: formData.motDePasse,
-        date_inscription: new Date().toISOString(),
-        role: "client"
-      };
-
-      await api.post("/utilisateurs", newUser);
-      
-      setMessage("Inscription réussie ! Redirection...");
-      setMessageType("success");
-      
-      // Redirection après 2 secondes
-      setTimeout(() => {
-        window.location.href = "/login";
-      }, 2000);
-    } catch (error) {
-      setMessage("Erreur lors de l'inscription. Veuillez réessayer.");
-      setMessageType("error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="register-page">
@@ -207,9 +191,13 @@ const Register = () => {
       <div className="register-form-section">
         <div className="form-container">
           {/* Logo */}
-          <Link to="/" className="logo">
-            <span className="logo-icon">ⵣ</span>
-            <span className="logo-text">Smart<span className="logo-highlight">Morocco</span></span>
+          <Link to="/">
+            <img
+              src="images/logo.png"
+              alt="Smart Morocco"
+              width="150"
+              height="150"
+            />
           </Link>
 
           <div className="form-header">
@@ -293,26 +281,7 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Ville */}
-            <div className="form-group">
-              <label htmlFor="ville" className="form-label">Ville</label>
-              <div className="input-wrapper">
-                <MapPin className="input-icon" size={20} />
-                <select
-                  id="ville"
-                  name="ville"
-                  value={formData.ville}
-                  onChange={handleChange}
-                  required
-                  className="form-input form-select"
-                >
-                  <option value="">Sélectionnez votre ville</option>
-                  {villesMaroc.map((ville) => (
-                    <option key={ville} value={ville}>{ville}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
+            
 
             {/* Mot de passe */}
             <div className="form-group">
@@ -644,57 +613,6 @@ const Register = () => {
         }
 
         /* Logo */
-        .logo {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          text-decoration: none;
-          margin-bottom: 30px;
-          transition: transform 0.3s ease;
-        }
-
-        .logo:hover {
-          transform: scale(1.05);
-        }
-
-        .logo-icon {
-          font-size: 2rem;
-          color: #0f4c75;
-          animation: spin 20s linear infinite;
-        }
-
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        .logo-text {
-          font-size: 1.5rem;
-          font-weight: 600;
-          color: #1e272e;
-        }
-
-        .logo-highlight {
-          color: #0f4c75;
-          font-weight: 700;
-          position: relative;
-        }
-
-        .logo-highlight::after {
-          content: '';
-          position: absolute;
-          bottom: -2px;
-          left: 0;
-          width: 100%;
-          height: 2px;
-          background: linear-gradient(90deg, #0f4c75, #bf5700);
-          transform: scaleX(0);
-          transition: transform 0.3s ease;
-        }
-
-        .logo:hover .logo-highlight::after {
-          transform: scaleX(1);
-        }
 
         /* En-tête du formulaire */
         .form-header {

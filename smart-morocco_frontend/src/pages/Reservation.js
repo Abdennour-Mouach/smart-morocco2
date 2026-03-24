@@ -15,11 +15,6 @@ import {
   Download,
   Eye,
   Printer,
-  Filter,
-  ArrowUpDown,
-  Coffee,
-  Plane,
-  Hotel,
   Compass
 } from "lucide-react";
 import api from "../services/api";

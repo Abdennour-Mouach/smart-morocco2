@@ -1,5 +1,6 @@
 package com.example.smart_morocco.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.List;
 
@@ -12,6 +13,8 @@ public class Utilisateur {
     private Integer id;
 
     private String nom;
+    private String prenom;       // Ajouté
+    private String telephone;    // Ajouté
 
     @Column(unique = true)
     private String email;
@@ -21,9 +24,11 @@ public class Utilisateur {
     private String role;
 
     @OneToMany(mappedBy = "utilisateur")
+    @JsonIgnore
     private List<Reservation> reservations;
 
     @OneToMany(mappedBy = "utilisateur")
+    @JsonIgnore
     private List<Review> reviews;
 
     // Getters & Setters
@@ -32,6 +37,11 @@ public class Utilisateur {
 
     public String getNom() { return nom; }
     public void setNom(String nom) { this.nom = nom; }
+    public String getPrenom() { return prenom; }
+    public void setPrenom(String prenom) { this.prenom = prenom; }  
+    public String getTelephone() { return telephone; }
+    public void setTelephone(String telephone) { this.telephone = telephone; }
+
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }

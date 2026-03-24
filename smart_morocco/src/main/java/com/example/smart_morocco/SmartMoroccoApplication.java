@@ -8,6 +8,7 @@ public class SmartMoroccoApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(SmartMoroccoApplication.class, args);
+		System.out.println("Application Smart Morocco is running ...");
 	}
 
 	

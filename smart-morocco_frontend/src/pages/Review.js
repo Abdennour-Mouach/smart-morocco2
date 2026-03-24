@@ -5,20 +5,13 @@ import {
   MessageCircle,
   ThumbsUp,
   Calendar,
-  User,
   Edit,
   Trash2,
-  Filter,
   Search,
   ChevronRight,
   Award,
   Camera,
-  Heart,
   Share2,
-  Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
   PlusCircle
 } from "lucide-react";
 import api from "../services/api";

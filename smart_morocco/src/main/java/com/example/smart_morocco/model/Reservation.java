@@ -1,5 +1,6 @@
 package com.example.smart_morocco.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.List;
@@ -27,6 +28,7 @@ public class Reservation {
     private Pack pack;
 
     @OneToMany(mappedBy = "reservation")
+    @JsonIgnore
     private List<Paiement> paiements;
 
     // Getters & Setters

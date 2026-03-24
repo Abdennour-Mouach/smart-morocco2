@@ -35,22 +35,21 @@ const Login = () => {
     setMessage("");
     
     try {
-      const res = await api.get(`/utilisateurs/email/${email}`);
-      if (res.data.mot_de_passe === motDePasse) {
-        setMessage("Connexion réussie !");
-        setMessageType("success");
-        // Stocker les infos utilisateur dans localStorage
-        localStorage.setItem("user", JSON.stringify(res.data));
-        // Redirection après 1.5 secondes
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 1500);
-      } else {
-        setMessage("Mot de passe incorrect");
-        setMessageType("error");
-      }
+      const res = await api.post("/utilisateurs/login", {
+        email,
+        mot_de_passe: motDePasse
+      });
+
+      setMessage("Connexion réussie !");
+      setMessageType("success");
+      localStorage.setItem("user", JSON.stringify(res.data));
+
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1500);
     } catch (error) {
-      setMessage("Utilisateur non trouvé");
+      const errorMessage = error.response?.data || "Erreur de connexion";
+      setMessage(errorMessage);
       setMessageType("error");
     } finally {
       setIsLoading(false);
@@ -63,10 +62,16 @@ const Login = () => {
       <div className="login-form-section">
         <div className="form-container">
           {/* Logo */}
-          <Link to="/" className="logo">
-            <span className="logo-icon">ⵣ</span>
-            <span className="logo-text">Smart<span className="logo-highlight">Morocco</span></span>
-          </Link>
+          <div>
+            <Link to="/">
+              <img
+                src="images/logo.png"
+                alt="Smart Morocco"
+                width="150"
+                height="150"
+              />
+            </Link>
+          </div>
 
           <div className="form-header">
             <h1 className="form-title">Bienvenue</h1>
@@ -243,7 +248,7 @@ const Login = () => {
         .login-form-section {
           flex: 1;
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           justify-content: center;
           padding: 40px;
           background: white;
@@ -254,61 +259,11 @@ const Login = () => {
         .form-container {
           max-width: 450px;
           width: 100%;
+          padding-top: 10px;
           animation: slideInLeft 0.6s ease;
         }
 
         /* Logo */
-        .logo {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          text-decoration: none;
-          margin-bottom: 40px;
-          transition: transform 0.3s ease;
-        }
-
-        .logo:hover {
-          transform: scale(1.05);
-        }
-
-        .logo-icon {
-          font-size: 2rem;
-          color: #0f4c75;
-          animation: spin 20s linear infinite;
-        }
-
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        .logo-text {
-          font-size: 1.5rem;
-          font-weight: 600;
-          color: #1e272e;
-        }
-
-        .logo-highlight {
-          color: #0f4c75;
-          font-weight: 700;
-          position: relative;
-        }
-
-        .logo-highlight::after {
-          content: '';
-          position: absolute;
-          bottom: -2px;
-          left: 0;
-          width: 100%;
-          height: 2px;
-          background: linear-gradient(90deg, #0f4c75, #bf5700);
-          transform: scaleX(0);
-          transition: transform 0.3s ease;
-        }
-
-        .logo:hover .logo-highlight::after {
-          transform: scaleX(1);
-        }
 
         /* En-tête du formulaire */
         .form-header {
