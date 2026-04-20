@@ -29,6 +29,10 @@ public class UtilisateurController {
     public List<Utilisateur> getAllUtilisateurs() {
         return utilisateurService.getAllUtilisateurs();
     }
+    @GetMapping("/roleUser")
+    public List<Utilisateur> getUtilisateursByRoleUser() {
+        return utilisateurService.getUtilisateursByRole("ROLE_USER");
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<Utilisateur> getUtilisateurById(@PathVariable Integer id) {

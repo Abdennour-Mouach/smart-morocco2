@@ -1,67 +1,73 @@
 package com.example.smart_morocco.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
-import java.util.List;
 
 @Entity
-@Table(name = "pack")
 public class Pack {
 
-        @Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;  // plus simple
+    private Long id;
 
-    private String nom_pack;
-
+    private String nomPack;
+    private String destination;
+    private int duree;
+    private double prixTotal;
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    private Double prix;
+    @Column(columnDefinition = "TEXT")
+    private String planning;
 
-    private Double promotion;
+    @Column(name = "image_url", length = 1000)
+    @JsonProperty("imageUrl")
+    @JsonAlias({"image_url", "imageURL"})
+    private String imageUrl;
+    
+    private Long id_hebergement;
+    private Long id_restaurant;
+    private Long id_activite;
 
-    @OneToMany(mappedBy = "pack")
-    @JsonIgnore
-    private List<Hotel> hotels;
+    // GETTERS & SETTERS
 
-    @OneToMany(mappedBy = "pack")
-    @JsonIgnore
-    private List<Restaurant> restaurants;
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    @OneToMany(mappedBy = "pack")
-    @JsonIgnore
-    private List<Evenement> evenements;
+    public String getNomPack() { return nomPack; }
+    public void setNomPack(String nomPack) { this.nomPack = nomPack; }
 
-    @OneToMany(mappedBy = "pack")
-    @JsonIgnore
-    private List<Reservation> reservations;
+    public String getDestination() { return destination; }
+    public void setDestination(String destination) { this.destination = destination; }
 
-    // Getters & Setters
-    public Integer getId() { return id; }
-    public void setId(Integer id) { this.id = id; }
+    public int getDuree() { return duree; }
+    public void setDuree(int duree) { this.duree = duree; }
 
-    public String getNom_pack() { return nom_pack; }
-    public void setNom_pack(String nom_pack) { this.nom_pack = nom_pack; }
+    public double getPrixTotal() { return prixTotal; }
+    public void setPrixTotal(double prixTotal) { this.prixTotal = prixTotal; }
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
-    public Double getPrix() { return prix; }
-    public void setPrix(Double prix) { this.prix = prix; }
+    public String getPlanning() { return planning; }
+    public void setPlanning(String planning) { this.planning = planning; }
 
-    public Double getPromotion() { return promotion; }
-    public void setPromotion(Double promotion) { this.promotion = promotion; }
+    public Long getId_hebergement() { return id_hebergement; }
+    public void setId_hebergement(Long id_hebergement) { this.id_hebergement = id_hebergement; }
 
-    public List<Hotel> getHotels() { return hotels; }
-    public void setHotels(List<Hotel> hotels) { this.hotels = hotels; }
+    public Long getId_restaurant() { return id_restaurant; }
+    public void setId_restaurant(Long id_restaurant) { this.id_restaurant = id_restaurant; }
+    
+    public Long getId_activite() { return id_activite; }
+    public void setId_activite(Long id_activite) { this.id_activite = id_activite; }
+    
+    public String getImageUrl() {
+        return imageUrl;
+    }
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
 
-    public List<Restaurant> getRestaurants() { return restaurants; }
-    public void setRestaurants(List<Restaurant> restaurants) { this.restaurants = restaurants; }
-
-    public List<Evenement> getEvenements() { return evenements; }
-    public void setEvenements(List<Evenement> evenements) { this.evenements = evenements; }
-
-    public List<Reservation> getReservations() { return reservations; }
-    public void setReservations(List<Reservation> reservations) { this.reservations = reservations; }
+    
 }

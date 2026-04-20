@@ -31,6 +31,9 @@ public class UtilisateurService implements UserDetailsService {
         return utilisateurRepository.findAll();
     }
 
+    public List<Utilisateur> getUtilisateursByRole(String role) {
+        return utilisateurRepository.findByRole(role);
+    }
     public Optional<Utilisateur> getUtilisateurById(Integer id) {
         return utilisateurRepository.findById(id);
     }

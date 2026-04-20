@@ -1,13 +1,84 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, User, Calendar, ChevronDown, Settings, LogOut } from "lucide-react";
+import { Menu, X, User, Calendar, ChevronDown, Settings, LogOut, Heart, Bell, Languages } from "lucide-react";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [language, setLanguage] = useState(() => {
+    return localStorage.getItem("language") || "fr";
+  });
   const location = useLocation();
   const profileMenuRef = useRef(null);
+
+  // Translations
+  const translations = {
+    fr: {
+      nav: {
+        home: "Accueil",
+        about: "A propos",
+        contact: "Contact",
+        packs: "Packs",
+        reservation: "Réservation",
+      },
+      auth: {
+        login: "Connexion",
+        register: "Inscription",
+        profile: "Profil",
+        myReservations: "Mes Réservations",
+        settings: "Paramètres",
+        logout: "Déconnexion",
+      },
+      profile: {
+        myProfile: "Mon Profil",
+        myReservations: "Mes Réservations",
+        settings: "Paramètres",
+        logout: "Déconnexion",
+      },
+      notifications: {
+        title: "Notifications",
+        noNotifications: "Aucune notification",
+        markAsRead: "Marquer comme lue",
+      },
+      likes: {
+        title: "J'adore",
+      },
+    },
+    en: {
+      nav: {
+        home: "Home",
+        about: "About",
+        contact: "Contact",
+        packs: "Packs",
+        reservation: "Reservation",
+      },
+      auth: {
+        login: "Login",
+        register: "Register",
+        profile: "Profile",
+        myReservations: "My Reservations",
+        settings: "Settings",
+        logout: "Logout",
+      },
+      profile: {
+        myProfile: "My Profile",
+        myReservations: "My Reservations",
+        settings: "Settings",
+        logout: "Logout",
+      },
+      notifications: {
+        title: "Notifications",
+        noNotifications: "No notifications",
+        markAsRead: "Mark as read",
+      },
+      likes: {
+        title: "Like",
+      },
+    },
+  };
+
+  const t = translations[language];
 
   useEffect(() => {
     try {
@@ -19,12 +90,16 @@ const Navbar = () => {
   }, [location.pathname]);
 
   useEffect(() => {
+    localStorage.setItem("language", language);
+  }, [language]);
+
+  // Click outside handler for profile menu only
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setIsProfileMenuOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -37,28 +112,32 @@ const Navbar = () => {
   };
 
   const navLinks = [
-    { path: "/", label: "Accueil" },
-    { path: "/about", label: "A propos" },
-    { path: "/contact", label: "Contact" },
-    { path: "/packs", label: "Packs" },
-    { path: "/reservation", label: "Reservation" }
+    { path: "/", label: t.nav.home },
+    { path: "/about", label: t.nav.about },
+    { path: "/contact", label: t.nav.contact },
+    { path: "/packs", label: t.nav.packs },
+    { path: "/reservation", label: t.nav.reservation },
   ];
 
   const mobileAuthLinks = user
-    ? [{ path: "/Profile", label: "Profil" }]
+    ? [{ path: "/profile", label: t.auth.profile }]
     : [
-        { path: "/login", label: "Connexion" },
-        { path: "/register", label: "Inscription" }
+        { path: "/login", label: t.auth.login },
+        { path: "/register", label: t.auth.register },
       ];
 
   const isActive = (path) => location.pathname === path;
+
+  const toggleLanguage = () => {
+    setLanguage(prev => prev === "fr" ? "en" : "fr");
+  };
 
   return (
     <nav className="navbar">
       <div className="navbar-container">
         {/* Logo */}
         <Link to="/" className="logo">
-          <img src="images/logo.png" alt="Smart Morocco" className="logo-img" />
+          <img src="/images/logo.png" alt="Smart Morocco" className="logo-img" />
         </Link>
 
         {/* Desktop Menu */}
@@ -74,60 +153,79 @@ const Navbar = () => {
           ))}
         </div>
 
-        {/* Profil utilisateur */}
-        <div className="profile-section" ref={profileMenuRef}>
-          {user ? (
-            <div className="profile-container">
-              <button
-                className="profile-button"
-                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-              >
-                <div className="profile-avatar">
-                  {user.prenom?.charAt(0)}{user.nom?.charAt(0)}
-                </div>
-                <span className="profile-name">{user.prenom} {user.nom}</span>
-                <ChevronDown size={16} className={`chevron ${isProfileMenuOpen ? "open" : ""}`} />
-              </button>
+        {/* Right Section: Langue, J'adore, Notifications, Profil */}
+        <div className="right-section">
+          {/* Language Switcher */}
+          <button className="icon-btn language-btn" onClick={toggleLanguage} title={language === "fr" ? "English" : "Français"}>
+            <Languages size={20} />
+            <span className="language-text">{language.toUpperCase()}</span>
+          </button>
 
-              {isProfileMenuOpen && (
-                <div className="profile-menu">
-                  <div className="menu-header">
-                    <div className="menu-avatar">
-                      {user.prenom?.charAt(0)}{user.nom?.charAt(0)}
+          {/* J'adore Icon (static, no events) */}
+          <div className="icon-btn like-btn" title={t.likes.title}>
+            <Heart size={20} />
+          </div>
+
+          {/* Notification Icon (static, no events) */}
+          <div className="icon-btn notification-btn" title={t.notifications.title}>
+            <Bell size={20} />
+          </div>
+
+          {/* Profile Section */}
+          <div className="profile-section" ref={profileMenuRef}>
+            {user ? (
+              <div className="profile-container">
+                <button
+                  className="profile-button"
+                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                >
+                  <div className="profile-avatar">
+                    {user.prenom?.charAt(0)}{user.nom?.charAt(0)}
+                  </div>
+                  <span className="profile-name">{user.prenom} {user.nom}</span>
+                  <ChevronDown size={16} className={`chevron ${isProfileMenuOpen ? "open" : ""}`} />
+                </button>
+
+                {isProfileMenuOpen && (
+                  <div className="profile-menu">
+                    <div className="menu-header">
+                      <div className="menu-avatar">
+                        {user.prenom?.charAt(0)}{user.nom?.charAt(0)}
+                      </div>
+                      <div className="menu-user-info">
+                        <span className="menu-user-name">{user.prenom} {user.nom}</span>
+                        <span className="menu-user-email">{user.email}</span>
+                      </div>
                     </div>
-                    <div className="menu-user-info">
-                      <span className="menu-user-name">{user.prenom} {user.nom}</span>
-                      <span className="menu-user-email">{user.email}</span>
+                    <div className="menu-items">
+                      <Link to="/profile" className="menu-item">
+                        <User size={16} />
+                        <span>{t.profile.myProfile}</span>
+                      </Link>
+                      <Link to="/reservation" className="menu-item">
+                        <Calendar size={16} />
+                        <span>{t.profile.myReservations}</span>
+                      </Link>
+                      <Link to="/settings" className="menu-item">
+                        <Settings size={16} />
+                        <span>{t.profile.settings}</span>
+                      </Link>
+                      <div className="menu-divider"></div>
+                      <button onClick={handleLogout} className="menu-item logout">
+                        <LogOut size={16} />
+                        <span>{t.profile.logout}</span>
+                      </button>
                     </div>
                   </div>
-                  <div className="menu-items">
-                    <Link to="/profile" className="menu-item">
-                      <User size={16} />
-                      <span>Mon Profil</span>
-                    </Link>
-                    <Link to="/reservation" className="menu-item">
-                      <Calendar size={16} />
-                      <span>Mes Reservations</span>
-                    </Link>
-                    <Link to="/settings" className="menu-item">
-                      <Settings size={16} />
-                      <span>Parametres</span>
-                    </Link>
-                    <div className="menu-divider"></div>
-                    <button onClick={handleLogout} className="menu-item logout">
-                      <LogOut size={16} />
-                      <span>Deconnexion</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="auth-buttons">
-              <Link to="/login" className="login-btn-nav">Connexion</Link>
-              <Link to="/register" className="register-btn-nav">Inscription</Link>
-            </div>
-          )}
+                )}
+              </div>
+            ) : (
+              <div className="auth-buttons">
+                <Link to="/login" className="login-btn-nav">{t.auth.login}</Link>
+                <Link to="/register" className="register-btn-nav">{t.auth.register}</Link>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Mobile Menu Button */}
@@ -148,6 +246,11 @@ const Navbar = () => {
             <span>{link.label}</span>
           </Link>
         ))}
+        {/* Mobile language toggle */}
+        <button onClick={toggleLanguage} className="mobile-link mobile-language-btn">
+          <Languages size={18} />
+          <span>{language === "fr" ? "English" : "Français"}</span>
+        </button>
       </div>
 
       <style jsx>{`
@@ -198,6 +301,47 @@ const Navbar = () => {
         .nav-link:hover,
         .nav-link.active {
           color: #0f4c75;
+        }
+
+        /* Right section with icons */
+        .right-section {
+          display: flex;
+          align-items: center;
+          gap: 0.8rem;
+        }
+
+        .icon-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #1e272e;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.3s ease;
+        }
+
+        /* For static icons (no cursor pointer) */
+        .icon-btn:not(button) {
+          cursor: default;
+        }
+
+        .icon-btn:hover {
+          background: rgba(15, 76, 117, 0.1);
+          color: #0f4c75;
+        }
+
+        .language-btn {
+          gap: 4px;
+          border-radius: 20px;
+          padding: 0.5rem 0.8rem;
+          cursor: pointer;
+        }
+
+        .language-text {
+          font-size: 0.8rem;
+          font-weight: 600;
         }
 
         /* Profile Section */
@@ -297,6 +441,7 @@ const Navbar = () => {
           box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
           overflow: hidden;
           animation: slideDown 0.3s ease;
+          z-index: 1000;
         }
 
         .menu-header {
@@ -404,11 +549,16 @@ const Navbar = () => {
         .mobile-link {
           display: flex;
           align-items: center;
+          gap: 12px;
           padding: 1rem;
           color: #1e272e;
           text-decoration: none;
           border-radius: 8px;
           transition: all 0.3s ease;
+          width: 100%;
+          background: none;
+          border: none;
+          cursor: pointer;
         }
 
         .mobile-link:hover {
@@ -419,6 +569,11 @@ const Navbar = () => {
         .mobile-link.active {
           color: #0f4c75;
           font-weight: 600;
+        }
+
+        .mobile-language-btn {
+          margin-top: 8px;
+          justify-content: flex-start;
         }
 
         @keyframes slideDown {
@@ -462,6 +617,18 @@ const Navbar = () => {
 
           .profile-name {
             display: none;
+          }
+
+          .right-section {
+            gap: 0.4rem;
+          }
+
+          .language-text {
+            display: none;
+          }
+
+          .icon-btn {
+            padding: 0.4rem;
           }
         }
       `}</style>

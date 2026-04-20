@@ -1,6 +1,6 @@
 package com.example.smart_morocco.service;
 
-import com.example.smart_morocco.model.Restaurant;
+import com.example.smart_morocco.model.Restauration;
 import com.example.smart_morocco.repository.RestaurantRepository;
 import org.springframework.stereotype.Service;
 
@@ -16,27 +16,19 @@ public class RestaurantService {
         this.restaurantRepository = restaurantRepository;
     }
 
-    public List<Restaurant> getAllRestaurants() {
+    public List<Restauration> getAllRestaurants() {
         return restaurantRepository.findAll();
     }
 
-    public Optional<Restaurant> getRestaurantById(Integer id) {
+    public Optional<Restauration> getRestaurantById(Long id) {
         return restaurantRepository.findById(id);
     }
 
-    public List<Restaurant> getRestaurantsByVille(String ville) {
-        return restaurantRepository.findByVille(ville);
-    }
-
-    public List<Restaurant> getRestaurantsByPackId(Integer idPack) {
-        return restaurantRepository.findByPack_Id(idPack);
-    }
-
-    public Restaurant saveRestaurant(Restaurant restaurant) {
+    public Restauration saveRestaurant(Restauration restaurant) {
         return restaurantRepository.save(restaurant);
     }
 
-    public void deleteRestaurant(Integer id) {
+    public void deleteRestaurant(Long id) {
         restaurantRepository.deleteById(id);
     }
 }

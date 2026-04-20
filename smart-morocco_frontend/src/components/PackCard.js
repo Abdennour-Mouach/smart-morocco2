@@ -1,46 +1,80 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { MapPin, Calendar, Users, Star, Clock, Heart, Share2, ChevronRight } from "lucide-react";
+
+const defaultPack = {
+  id: 1,
+  title: "Circuit Imperial",
+  subtitle: "Marrakech - Fes - Meknes - Rabat",
+  description: "Decouvrez les 4 villes imperiales du Maroc dans un circuit de luxe de 7 jours",
+  price: 890,
+  originalPrice: 1200,
+  currency: "EUR",
+  duration: "7 jours",
+  nights: "6 nuits",
+  people: "2-8 personnes",
+  rating: 4.8,
+  reviews: 124,
+  image: "https://images.unsplash.com/photo-1539020144153-e5a23f8b9c8a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+  badge: "Populaire",
+  includes: ["Hotels 5*", "Petit-dejeuner", "Guide francophone"],
+  highlights: [
+    "Nuit dans le desert d'Agafay",
+    "Couscous traditionnel",
+    "Hammam & Spa inclus"
+  ],
+  location: "Maroc",
+  availableDates: ["Avr 2026", "Mai 2026", "Juin 2026"],
+  discount: 25
+};
 
 const PackCard = ({ pack }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Données par défaut pour l'exemple
-  const defaultPack = {
-    id: 1,
-    title: "Circuit Impérial",
-    subtitle: "Marrakech - Fès - Meknès - Rabat",
-    description: "Découvrez les 4 villes impériales du Maroc dans un circuit de luxe de 7 jours",
-    price: 890,
-    originalPrice: 1200,
-    currency: "€",
-    duration: "7 jours",
-    nights: "6 nuits",
-    people: "2-8 personnes",
-    rating: 4.8,
-    reviews: 124,
-    image: "https://images.unsplash.com/photo-1539020144153-e5a23f8b9c8a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    badge: "Populaire",
-    includes: ["Hôtels 5*", "Petit-déjeuner", "Guide francophone", "Transport VIP"],
-    highlights: [
-      "Nuit dans le désert d'Agafay",
-      "Couscous traditionnel",
-      "Hammam & Spa inclus"
-    ],
-    location: "Maroc",
-    availableDates: ["Avr 2024", "Mai 2024", "Juin 2024"],
-    discount: 25
-  };
+  const data = useMemo(() => {
+    if (!pack) {
+      return defaultPack;
+    }
 
-  const data = pack || defaultPack;
+    const includes = [];
+    if (pack.id_hebergement) includes.push("Hebergement");
+    if (pack.id_restaurant) includes.push("Restaurant");
+    if (pack.id_activite) includes.push("Activite");
+
+    return {
+      id: pack.id,
+      title: pack.nomPack,
+      subtitle: pack.destination || "Maroc",
+      description: pack.description,
+      price: pack.prixTotal,
+      originalPrice: null,
+      currency: "MAD",
+      duration: pack.duree ? `${pack.duree} jours` : "Duree a definir",
+      nights: pack.duree ? `${Math.max(pack.duree - 1, 0)} nuits` : "",
+      people: "2-8 personnes",
+      rating: 4.7,
+      reviews: 0,
+      image: pack.imageUrl || "/images/ESSAOUIRA.jpg",
+      badge: "Populaire",
+      includes: includes.length > 0 ? includes : ["Hebergement", "Restaurant", "Guide"],
+      highlights: ["Experiences locales", "Cuisine marocaine", "Visites guidees"],
+      location: pack.destination || "Maroc",
+      availableDates: ["Avr 2026", "Mai 2026", "Juin 2026"],
+      discount: null,
+    };
+  }, [pack]);
+
+  if (!data) {
+    return null;
+  }
 
   return (
-    <div 
+    <div
       className="pack-card"
+      onClick={() => (window.location.href = `/packs/${data.id}`)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Badges */}
       <div className="card-badges">
         {data.badge && (
           <span className="badge popular">
@@ -55,15 +89,13 @@ const PackCard = ({ pack }) => {
         )}
       </div>
 
-      {/* Image Section */}
       <div className="card-image">
         <img src={data.image} alt={data.title} />
         <div className="image-overlay"></div>
-        
-        {/* Action Buttons */}
+
         <div className="image-actions">
-          <button 
-            className={`action-btn ${isLiked ? 'liked' : ''}`}
+          <button
+            className={`action-btn ${isLiked ? "liked" : ""}`}
             onClick={() => setIsLiked(!isLiked)}
             aria-label="Ajouter aux favoris"
           >
@@ -74,8 +106,7 @@ const PackCard = ({ pack }) => {
           </button>
         </div>
 
-        {/* Quick Info Overlay */}
-        <div className={`quick-info ${isHovered ? 'visible' : ''}`}>
+        <div className={`quick-info ${isHovered ? "visible" : ""}`}>
           <div className="quick-info-item">
             <Clock size={16} />
             <span>{data.duration}</span>
@@ -87,9 +118,7 @@ const PackCard = ({ pack }) => {
         </div>
       </div>
 
-      {/* Content Section */}
       <div className="card-content">
-        {/* Header */}
         <div className="card-header">
           <div>
             <h3 className="card-title">{data.title}</h3>
@@ -102,9 +131,9 @@ const PackCard = ({ pack }) => {
             <span className="rating-score">{data.rating}</span>
             <div className="rating-stars">
               {[...Array(5)].map((_, i) => (
-                <Star 
-                  key={i} 
-                  size={14} 
+                <Star
+                  key={i}
+                  size={14}
                   fill={i < Math.floor(data.rating) ? "currentColor" : "none"}
                   className={i < Math.floor(data.rating) ? "star-filled" : "star-empty"}
                 />
@@ -114,19 +143,16 @@ const PackCard = ({ pack }) => {
           </div>
         </div>
 
-        {/* Description */}
         <p className="card-description">{data.description}</p>
 
-        {/* Highlights */}
         <div className="card-highlights">
           {data.highlights.map((highlight, index) => (
             <span key={index} className="highlight-tag">
-              ✦ {highlight}
+              * {highlight}
             </span>
           ))}
         </div>
 
-        {/* Includes */}
         <div className="card-includes">
           {data.includes.map((item, index) => (
             <div key={index} className="include-item">
@@ -136,7 +162,6 @@ const PackCard = ({ pack }) => {
           ))}
         </div>
 
-        {/* Dates */}
         <div className="card-dates">
           <Calendar size={16} />
           <div className="dates-list">
@@ -146,7 +171,6 @@ const PackCard = ({ pack }) => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="card-footer">
           <div className="price-section">
             <div className="price-container">
@@ -162,9 +186,9 @@ const PackCard = ({ pack }) => {
             </div>
             <span className="nights-info">{data.nights}</span>
           </div>
-          
+
           <button className="book-btn">
-            Réserver
+            Reserver
             <ChevronRight size={18} className="btn-icon" />
           </button>
         </div>
@@ -187,7 +211,6 @@ const PackCard = ({ pack }) => {
           box-shadow: 0 20px 60px rgba(15, 76, 117, 0.2);
         }
 
-        /* Badges */
         .card-badges {
           position: absolute;
           top: 16px;
@@ -221,7 +244,6 @@ const PackCard = ({ pack }) => {
           color: white;
         }
 
-        /* Image Section */
         .card-image {
           position: relative;
           height: 240px;
@@ -241,14 +263,10 @@ const PackCard = ({ pack }) => {
 
         .image-overlay {
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
+          inset: 0;
           background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.4));
         }
 
-        /* Action Buttons */
         .image-actions {
           position: absolute;
           top: 16px;
@@ -283,7 +301,6 @@ const PackCard = ({ pack }) => {
           color: #ff6b6b;
         }
 
-        /* Quick Info */
         .quick-info {
           position: absolute;
           bottom: 16px;
@@ -315,12 +332,10 @@ const PackCard = ({ pack }) => {
           color: #0f4c75;
         }
 
-        /* Content Section */
         .card-content {
           padding: 20px;
         }
 
-        /* Header */
         .card-header {
           margin-bottom: 12px;
         }
@@ -373,7 +388,6 @@ const PackCard = ({ pack }) => {
           color: #999;
         }
 
-        /* Description */
         .card-description {
           font-size: 14px;
           line-height: 1.6;
@@ -381,7 +395,6 @@ const PackCard = ({ pack }) => {
           margin: 0 0 16px 0;
         }
 
-        /* Highlights */
         .card-highlights {
           display: flex;
           flex-wrap: wrap;
@@ -398,7 +411,6 @@ const PackCard = ({ pack }) => {
           font-weight: 500;
         }
 
-        /* Includes */
         .card-includes {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
@@ -424,7 +436,6 @@ const PackCard = ({ pack }) => {
           border-radius: 50%;
         }
 
-        /* Dates */
         .card-dates {
           display: flex;
           align-items: center;
@@ -459,7 +470,6 @@ const PackCard = ({ pack }) => {
           border-color: #0f4c75;
         }
 
-        /* Footer */
         .card-footer {
           display: flex;
           align-items: center;
@@ -534,7 +544,6 @@ const PackCard = ({ pack }) => {
           transform: translateX(3px);
         }
 
-        /* Animation d'entrée */
         @keyframes cardAppear {
           from {
             opacity: 0;
@@ -550,7 +559,6 @@ const PackCard = ({ pack }) => {
           animation: cardAppear 0.6s ease forwards;
         }
 
-        /* Responsive */
         @media (max-width: 480px) {
           .card-content {
             padding: 16px;

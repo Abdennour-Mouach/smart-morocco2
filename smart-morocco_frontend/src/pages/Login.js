@@ -35,7 +35,7 @@ const Login = () => {
     setMessage("");
     
     try {
-      const res = await api.post("/utilisateurs/login", {
+      const res = await api.post("/api/utilisateurs/login", {
         email,
         mot_de_passe: motDePasse
       });
@@ -45,7 +45,8 @@ const Login = () => {
       localStorage.setItem("user", JSON.stringify(res.data));
 
       setTimeout(() => {
-        window.location.href = "/";
+        const role = res?.data?.role;
+        window.location.href = role === "ROLE_ADMIN" ? "/admin" : "/";
       }, 1500);
     } catch (error) {
       const errorMessage = error.response?.data || "Erreur de connexion";
@@ -65,7 +66,7 @@ const Login = () => {
           <div>
             <Link to="/">
               <img
-                src="images/logo.png"
+                src="/images/logo.png"
                 alt="Smart Morocco"
                 width="150"
                 height="150"
@@ -93,6 +94,8 @@ const Login = () => {
                   type="email"
                   placeholder="exemple@email.com"
                   value={email}
+                  style={{ paddingLeft: "50px" }}
+
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="form-input"
@@ -112,6 +115,7 @@ const Login = () => {
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={motDePasse}
+                  style={{ paddingLeft: "50px" }}
                   onChange={(e) => setMotDePasse(e.target.value)}
                   required
                   className="form-input"
@@ -315,7 +319,7 @@ const Login = () => {
 
         .form-input {
           width: 100%;
-          padding: 15px 15px 15px 50px;
+          padding-left: 50px;
           border: 2px solid #eaeaea;
           border-radius: 15px;
           font-size: 1rem;

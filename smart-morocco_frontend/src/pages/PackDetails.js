@@ -1,1359 +1,1020 @@
-import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { 
-  MapPin, 
-  Calendar, 
-  Users, 
-  Star, 
-  Clock,
-  CheckCircle,
-  Coffee,
-  Camera,
-  Wifi,
-  Car,
-  Shield,
-  Heart,
-  Share2,
-  ChevronLeft,
-  ChevronRight,
-  Umbrella,
-  ChevronDown,
-  ChevronUp,
-  Phone,
-  Mail,
-  AlertCircle
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams, Link } from "react-router-dom";
+import {
+  MapPin, Clock, Star, CheckCircle, Hotel,
+  ClipboardList, ChevronLeft, Calendar, Users,
+  ShieldCheck, PhoneCall, HeartHandshake, X
 } from "lucide-react";
 import api from "../services/api";
+import Footer from "./Footer";
 
 const PackDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [pack, setPack] = useState(null);
+  const [hebergement, setHebergement] = useState(null);
+  const [restaurant, setRestaurant] = useState(null);
+  const [activite, setActivite] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeImage, setActiveImage] = useState(0);
-  const [isLiked, setIsLiked] = useState(false);
-  const [selectedDate, setSelectedDate] = useState("");
-  const [nbPersonnes, setNbPersonnes] = useState(2);
-  const [activeTab, setActiveTab] = useState("description");
-  const [showFullItinerary, setShowFullItinerary] = useState(false);
-  const [reviews, setReviews] = useState([]);
-  const [similarPacks, setSimilarPacks] = useState([]);
+  const [departDate, setDepartDate] = useState("");
+  const [persons, setPersons] = useState(2);
+  const [activeThumb, setActiveThumb] = useState(0);
+  const [showReserveModal, setShowReserveModal] = useState(false);
+  const [reserveLoading, setReserveLoading] = useState(false);
+  const [reserveMessage, setReserveMessage] = useState("");
 
-  // Données mockées pour l'exemple
-  const mockPack = {
-    id_pack: 1,
-    titre: "Circuit Impérial - Marrakech, Fès, Meknès, Rabat",
-    description: "Plongez au cœur de l'histoire du Maroc en visitant ses quatre villes impériales. Ce circuit de 7 jours vous fera découvrir les trésors architecturaux, les médinas animées et la richesse culturelle du royaume.",
-    long_description: `Découvrez l'âme du Maroc à travers ce circuit exceptionnel qui vous mènera à travers les quatre villes impériales. De Marrakech la rouge à Fès la spirituelle, en passant par Meknès l'impériale et Rabat la moderne, chaque étape vous révélera un visage unique du Maroc.
+  const parsePlanning = (value) => {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
 
-    **Jour 1 : Arrivée à Marrakech**
-    Accueil à l'aéroport et transfert à votre riad. Installation et découverte de la place Jemaa el-Fna.
+    if (typeof value === "string") {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (err) {
+        return [];
+      }
+    }
 
-    **Jour 2 : Marrakech - Visite de la ville**
-    Découverte des principaux monuments : Koutoubia, Palais de la Bahia, Tombeaux Saadiens. Après-midi libre pour explorer les souks.
-
-    **Jour 3 : Marrakech - Fès**
-    Route vers Fès via le Moyen Atlas. Arrêt à Ifrane, la "Suisse marocaine". Installation à Fès.
-
-    **Jour 4 : Fès - Visite de la médina**
-    Exploration de la plus ancienne médina du monde : université Al Quaraouiyine, tanneries Chouara, souks traditionnels.`,
-    prix: 890,
-    prix_promotion: 790,
-    duree: "7 jours / 6 nuits",
-    destination: "Maroc",
-    villes: ["Marrakech", "Fès", "Meknès", "Rabat"],
-    note_moyenne: 4.8,
-    nb_avis: 124,
-    images: [
-      "https://images.unsplash.com/photo-1539020144153-e5a23f8b9c8a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1597218855407-debcc2f8e64a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1566368278-6a7db8bca6e4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1546460573-f61e5e469f4d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
-    ],
-    includes: [
-      "Hébergement en riads/hôtels 4*",
-      "Petits déjeuners inclus",
-      "Guide francophone privé",
-      "Transport en véhicule climatisé",
-      "Visites des monuments",
-      "Assistance 24/7"
-    ],
-    excludes: [
-      "Déjeuners et dîners",
-      "Boissons",
-      "Pourboires",
-      "Assurance voyage"
-    ],
-    equipements: [
-      { icon: <Wifi size={18} />, label: "WiFi gratuit" },
-      { icon: <Coffee size={18} />, label: "Petit-déjeuner" },
-      { icon: <Car size={18} />, label: "Transport inclus" },
-      { icon: <Camera size={18} />, label: "Visites guidées" },
-      { icon: <Shield size={18} />, label: "Assistance" },
-      { icon: <Umbrella size={18} />, label: "Activités incluses" }
-    ],
-    itineraires: [
-      { jour: 1, titre: "Arrivée à Marrakech", description: "Accueil et installation", image: "https://images.unsplash.com/photo-1539020144153-e5a23f8b9c8a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" },
-      { jour: 2, titre: "Visite de Marrakech", description: "Découverte des monuments", image: "https://images.unsplash.com/photo-1597218855407-debcc2f8e64a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" },
-      { jour: 3, titre: "Route vers Fès", description: "Traversée du Moyen Atlas", image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" },
-      { jour: 4, titre: "Fès médiévale", description: "Exploration de la médina", image: "https://images.unsplash.com/photo-1566368278-6a7db8bca6e4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" },
-      { jour: 5, titre: "Meknès et Volubilis", description: "Visite des ruines romaines", image: "https://images.unsplash.com/photo-1591123223454-7b7f6e952e23?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" },
-      { jour: 6, titre: "Rabat la capitale", description: "Tour Hassan et Kasbah", image: "https://images.unsplash.com/photo-1580541832629-2d71f0d5428a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" },
-      { jour: 7, titre: "Retour à Marrakech", description: "Dernières emplettes et transfert", image: "https://images.unsplash.com/photo-1539020144153-e5a23f8b9c8a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" }
-    ],
-    avis: [
-      { id: 1, user: "Sophie M.", note: 5, commentaire: "Voyage exceptionnel ! Organisation parfaite et guide passionné.", date: "2024-02-15", avatar: "https://randomuser.me/api/portraits/women/44.jpg" },
-      { id: 2, user: "Thomas L.", note: 5, commentaire: "Les riads sélectionnés étaient magnifiques. Je recommande !", date: "2024-02-10", avatar: "https://randomuser.me/api/portraits/men/32.jpg" },
-      { id: 3, user: "Marie C.", note: 4, commentaire: "Très beau circuit, peut-être un peu chargé mais inoubliable.", date: "2024-02-05", avatar: "https://randomuser.me/api/portraits/women/68.jpg" }
-    ]
+    return [];
   };
 
   useEffect(() => {
-    fetchPackDetails();
+    const fetchPack = async () => {
+      setIsLoading(true);
+      try {
+        const packRes = await api.get(`/api/packs/${id}`);
+        const packData = packRes.data;
+        setPack(packData);
+
+        const requests = [];
+        if (packData.id_hebergement) {
+          requests.push(api.get(`/api/hebergements/${packData.id_hebergement}`));
+        } else {
+          requests.push(Promise.resolve({ data: null }));
+        }
+
+        if (packData.id_restaurant) {
+          requests.push(api.get(`/api/restaurations/${packData.id_restaurant}`));
+        } else {
+          requests.push(Promise.resolve({ data: null }));
+        }
+
+        if (packData.id_activite) {
+          requests.push(api.get(`/api/activites/${packData.id_activite}`));
+        } else {
+          requests.push(Promise.resolve({ data: null }));
+        }
+
+        const [hebRes, restRes, actRes] = await Promise.all(requests);
+        setHebergement(hebRes.data);
+        setRestaurant(restRes.data);
+        setActivite(actRes.data);
+      } catch (err) {
+        console.error("Erreur lors du chargement du pack:", err);
+        setPack(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPack();
   }, [id]);
 
-  const fetchPackDetails = async () => {
-    setIsLoading(true);
+  const toImageUrl = (url) => {
+    if (!url) return "";
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    if (url.startsWith("/uploads/")) return `http://localhost:5006${url}`;
+    return url;
+  };
+
+  const getCurrentUserId = () => {
     try {
-      // Simulation d'appel API
-      setTimeout(() => {
-        setPack(mockPack);
-        setReviews(mockPack.avis);
-        setIsLoading(false);
-      }, 1000);
-      
-      // Version réelle avec API :
-      // const res = await api.get(`/packs/${id}`);
-      // setPack(res.data);
+      const user = JSON.parse(localStorage.getItem("user"));
+      return user?.id_utilisateur || user?.id || "";
     } catch (err) {
-      console.error("Erreur lors du chargement du pack:", err);
-      setIsLoading(false);
+      return "";
     }
   };
 
-  const handleNextImage = () => {
-    setActiveImage((prev) => (prev + 1) % pack.images.length);
-  };
+  const openReservationModal = () => {
+    setReserveMessage("");
 
-  const handlePrevImage = () => {
-    setActiveImage((prev) => (prev - 1 + pack.images.length) % pack.images.length);
-  };
-
-  const handleReservation = () => {
-    // Logique de réservation
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (!user) {
-      window.location.href = "/login";
-    } else {
-      // Rediriger vers la page de réservation
-      window.location.href = `/reservation?pack=${id}&date=${selectedDate}&personnes=${nbPersonnes}`;
+    if (!getCurrentUserId()) {
+      navigate("/login");
+      return;
     }
+
+    if (!departDate) {
+      setReserveMessage("Veuillez choisir une date de depart avant de confirmer.");
+      return;
+    }
+
+    setShowReserveModal(true);
   };
 
-  const calculateTotal = () => {
-    const prix = pack.prix_promotion || pack.prix;
-    return prix * nbPersonnes;
-  };
+  const confirmReservation = async () => {
+    const userId = getCurrentUserId();
+    if (!userId) {
+      navigate("/login");
+      return;
+    }
 
-  const getRatingStars = (rating) => {
-    return (
-      <div className="rating-stars">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            size={16}
-            className={`star ${star <= rating ? 'filled' : ''}`}
-            fill={star <= rating ? '#ffb84d' : 'none'}
-          />
-        ))}
-      </div>
-    );
+    if (!departDate) {
+      setReserveMessage("Veuillez choisir une date de depart.");
+      return;
+    }
+
+    setReserveLoading(true);
+    setReserveMessage("");
+
+    try {
+      const payload = {
+        idUtilisateur: Number(userId),
+        idPack: Number(id),
+        nbPersonnes: Number(persons) || 1,
+        dateDebut: departDate,
+        modePaiement: "Carte bancaire",
+      };
+
+      const res = await api.post("/reservations", payload);
+      setShowReserveModal(false);
+      setReserveMessage("Réservation confirmée avec succès.");
+      navigate("/reservations", { state: { reservation: res.data } });
+    } catch (err) {
+      console.error("Erreur lors de la réservation:", err);
+      setReserveMessage(
+        err.response?.data || "La réservation a échoué. Veuillez réessayer."
+      );
+    } finally {
+      setReserveLoading(false);
+    }
   };
 
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Chargement des détails du pack...</p>
-        <div className="loading-progress">
-          <div className="progress-bar"></div>
+      <>
+        <div className="loading-screen">
+          <div className="loading-ring">
+            <div /><div /><div /><div />
+          </div>
+          <p className="loading-text">Preparation de votre voyage...</p>
         </div>
-        <style jsx>{`
-          .loading-container {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #faf7f2 0%, #ffffff 100%);
-          }
-          .loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid #eaeaea;
-            border-top-color: #0f4c75;
-            border-right-color: #bf5700;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-          }
-          .loading-progress {
-            width: 200px;
-            height: 4px;
-            background: #eaeaea;
-            border-radius: 2px;
-            margin-top: 20px;
-            overflow: hidden;
-          }
-          .progress-bar {
-            width: 60%;
-            height: 100%;
-            background: linear-gradient(90deg, #0f4c75, #bf5700);
-            animation: progress 2s ease infinite;
-          }
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-          @keyframes progress {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(200%); }
-          }
-        `}</style>
-      </div>
+        <style>{loadingStyles}</style>
+      </>
     );
   }
 
   if (!pack) {
     return (
-      <div className="error-container">
-        <AlertCircle size={48} />
-        <h2>Pack non trouvé</h2>
-        <p>Le pack que vous recherchez n'existe pas ou a été supprimé.</p>
-        <Link to="/packs" className="back-btn">
-          <ChevronLeft size={18} />
-          Retour aux packs
-        </Link>
-        <style jsx>{`
-          .error-container {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 20px;
-          }
-          .error-container h2 {
-            font-size: 2rem;
-            color: #1e272e;
-            margin: 20px 0 10px;
-          }
-          .error-container p {
-            color: #666;
-            margin-bottom: 30px;
-          }
-          .back-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 30px;
-            background: linear-gradient(135deg, #0f4c75, #bf5700);
-            color: white;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: 600;
-            transition: transform 0.3s ease;
-          }
-          .back-btn:hover {
-            transform: translateY(-3px);
-          }
-        `}</style>
-      </div>
+      <>
+        <div className="not-found">
+          <span className="nf-icon">*</span>
+          <h2>Pack introuvable</h2>
+          <Link to="/packs" className="back-btn">
+            <ChevronLeft size={16} /> Retour aux packs
+          </Link>
+        </div>
+        <style>{notFoundStyles}</style>
+      </>
     );
   }
 
+  const images = (() => {
+    if (pack.imageUrl) return [toImageUrl(pack.imageUrl)];
+    if (pack.images?.length > 0) return pack.images.map(toImageUrl);
+    if (pack.imagePrincipale) return [toImageUrl(pack.imagePrincipale)];
+    return ["/images/ESSAOUIRA.jpg"];
+  })();
+
+  const hebergementImage = toImageUrl(hebergement?.imageUrl);
+  const restaurantImage = toImageUrl(restaurant?.imageurl || restaurant?.imageUrl);
+  const activiteImage = toImageUrl(activite?.imageUrl) || "/images/AitHaddou.jpg";
+
+  const thumbs = [
+    { src: images[0], label: "Vue principale" },
+    { src: hebergementImage, label: "Hebergement" },
+    { src: restaurantImage, label: "Restaurant" },
+    { src: activiteImage, label: "Activite" },
+  ].filter((item) => item.src);
+
+  const heroImage = thumbs[activeThumb]?.src || images[0];
+  const total = Math.max(Number(persons || 1), 1) * Number(pack.prixTotal || 0);
+  const planning = parsePlanning(pack.planning);
+
+  const inclusions = [
+    {
+      icon: <Hotel size={18} />,
+      title: "Hebergement",
+      image: hebergementImage,
+      detail: hebergement?.nomHibergement || hebergement?.type || "Non defini",
+    },
+    {
+      icon: <ClipboardList size={18} />,
+      title: "Restauration",
+      image: restaurantImage,
+      detail: restaurant
+        ? `${restaurant.nomRestauration} · ${restaurant.typeCuisine || "Cuisine marocaine"}`
+        : "Non defini",
+    },
+    {
+      icon: <ClipboardList size={18} />,
+      title: "Activites",
+      image: activiteImage,
+      detail: activite?.nomActivity || activite?.nom || "Non defini",
+    },
+  ].filter((item) => item.detail !== "Non defini" || item.image);
+
+  const guarantees = [
+    { icon: <ShieldCheck size={20} />, title: "Paiement securise", desc: "Transactions protegees et donnees chiffrees." },
+    { icon: <PhoneCall size={20} />, title: "Assistance 24h/24", desc: "Un conseiller disponible a tout moment." },
+    { icon: <HeartHandshake size={20} />, title: "Service premium", desc: "Accompagnement personnalise de bout en bout." },
+  ];
+
   return (
-    <div className="pack-details-page">
-      {/* Fil d'Ariane */}
-      <div className="breadcrumb">
-        <div className="container">
-          <Link to="/" className="breadcrumb-link">Accueil</Link>
-          <ChevronRight size={14} />
-          <Link to="/packs" className="breadcrumb-link">Packs</Link>
-          <ChevronRight size={14} />
-          <span className="breadcrumb-current">{pack.titre}</span>
-        </div>
-      </div>
-
-      <div className="container">
-        {/* En-tête */}
-        <div className="pack-header">
-          <div className="header-left">
-            <h1 className="pack-title">{pack.titre}</h1>
-            <div className="pack-meta">
-              <div className="pack-location">
-                <MapPin size={18} />
-                <span>{pack.destination}</span>
-              </div>
-              <div className="pack-duration">
-                <Clock size={18} />
-                <span>{pack.duree}</span>
-              </div>
-              <div className="pack-rating">
-                {getRatingStars(pack.note_moyenne)}
-                <span className="rating-score">{pack.note_moyenne}</span>
-                <span className="rating-count">({pack.nb_avis} avis)</span>
+    <>
+      <div className="pd-root">
+        <header className="pd-hero" style={{ backgroundImage: `url(${heroImage})` }}>
+          <div className="pd-hero-veil" />
+          <div className="pd-hero-inner">
+            <Link to="/packs" className="pd-back">
+              <ChevronLeft size={15} /> Tous les packs
+            </Link>
+            <div className="pd-hero-body">
+              <p className="pd-hero-eyebrow">
+                <MapPin size={13} /> {pack.destination || "Maroc"}
+              </p>
+              <h1 className="pd-hero-title">{pack.nomPack}</h1>
+              <div className="pd-hero-badges">
+                <span className="badge">
+                  <Clock size={13} /> {pack.duree ? `${pack.duree} jours` : "Duree flexible"}
+                </span>
+                <span className="badge badge-gold">
+                  <Star size={13} /> {pack.noteMoyenne || "4.8"}
+                </span>
               </div>
             </div>
           </div>
-          <div className="header-actions">
-            <button 
-              className={`action-btn like ${isLiked ? 'liked' : ''}`}
-              onClick={() => setIsLiked(!isLiked)}
-            >
-              <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
-            </button>
-            <button className="action-btn share">
-              <Share2 size={20} />
-            </button>
-          </div>
-        </div>
+        </header>
 
-        {/* Galerie d'images */}
-        <div className="gallery-section">
-          <div className="main-image">
-            <img src={pack.images[activeImage]} alt={pack.titre} />
-            <button className="gallery-nav prev" onClick={handlePrevImage}>
-              <ChevronLeft size={24} />
-            </button>
-            <button className="gallery-nav next" onClick={handleNextImage}>
-              <ChevronRight size={24} />
-            </button>
-            <div className="image-counter">
-              {activeImage + 1} / {pack.images.length}
-            </div>
-          </div>
-          <div className="thumbnail-grid">
-            {pack.images.map((img, index) => (
-              <button
-                key={index}
-                className={`thumbnail ${index === activeImage ? 'active' : ''}`}
-                onClick={() => setActiveImage(index)}
-              >
-                <img src={img} alt={`Vue ${index + 1}`} />
-              </button>
-            ))}
-          </div>
-        </div>
+        <div className="pd-layout">
+          <main className="pd-main">
+            <section className="pd-card pd-gallery">
+              <div className="gallery-stage">
+                <img src={heroImage} alt={pack.nomPack} className="gallery-main" />
+                <div className="gallery-label">{thumbs[activeThumb]?.label}</div>
+              </div>
+              <div className="gallery-strip">
+                {thumbs.map((thumb, index) => (
+                  <button
+                    key={index}
+                    className={`gallery-thumb ${index === activeThumb ? "active" : ""}`}
+                    onClick={() => setActiveThumb(index)}
+                  >
+                    <img src={thumb.src} alt={thumb.label} />
+                    {index === activeThumb && <span className="thumb-active-bar" />}
+                  </button>
+                ))}
+              </div>
+            </section>
 
-        <div className="content-grid">
-          {/* Colonne principale */}
-          <div className="main-content">
-            {/* Tabs de navigation */}
-            <div className="tabs-nav">
-              <button 
-                className={`tab-btn ${activeTab === 'description' ? 'active' : ''}`}
-                onClick={() => setActiveTab('description')}
-              >
-                Description
-              </button>
-              <button 
-                className={`tab-btn ${activeTab === 'itineraire' ? 'active' : ''}`}
-                onClick={() => setActiveTab('itineraire')}
-              >
-                Itinéraire
-              </button>
-              <button 
-                className={`tab-btn ${activeTab === 'equipements' ? 'active' : ''}`}
-                onClick={() => setActiveTab('equipements')}
-              >
-                Équipements
-              </button>
-              <button 
-                className={`tab-btn ${activeTab === 'avis' ? 'active' : ''}`}
-                onClick={() => setActiveTab('avis')}
-              >
-                Avis ({reviews.length})
-              </button>
-            </div>
+            <section className="pd-card">
+              <div className="section-header">
+                <span className="section-ornament">*</span>
+                <h2>A propos de ce voyage</h2>
+              </div>
+              <p className="pd-desc">{pack.description}</p>
+            </section>
 
-            {/* Contenu des tabs */}
-            <div className="tab-content">
-              {activeTab === 'description' && (
-                <div className="description-content">
-                  <p className="description-text">{pack.long_description || pack.description}</p>
-                  
-                  <div className="highlights">
-                    <h3>Points forts</h3>
-                    <div className="highlights-grid">
-                      {pack.villes?.map((ville, index) => (
-                        <div key={index} className="highlight-item">
-                          <MapPin size={18} />
-                          <span>{ville}</span>
-                        </div>
-                      ))}
+            <section className="pd-card">
+              <div className="section-header">
+                <span className="section-ornament">*</span>
+                <h2>Services inclus</h2>
+              </div>
+              <div className="inclusion-grid">
+                {inclusions.map((inc, index) => (
+                  <div className="inclusion-card" key={index}>
+                    <div className="inc-img-wrap">
+                      {inc.image ? <img src={inc.image} alt={inc.title} /> : <div className="inc-img-fallback">{inc.icon}</div>}
+                      <div className="inc-img-overlay" />
+                    </div>
+                    <div className="inc-body">
+                      <p className="inc-category">{inc.icon} {inc.title}</p>
+                      <p className="inc-detail">
+                        <CheckCircle size={13} className="inc-check" /> {inc.detail}
+                      </p>
                     </div>
                   </div>
+                ))}
+              </div>
+            </section>
 
-                  <div className="includes-excludes">
-                    <div className="includes">
-                      <h4>✓ Inclus</h4>
-                      <ul>
-                        {pack.includes?.map((item, index) => (
-                          <li key={index}>
-                            <CheckCircle size={16} />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
+            {planning.length > 0 && (
+              <section className="pd-card">
+                <div className="section-header">
+                  <span className="section-ornament">*</span>
+                  <h2>Planning du voyage</h2>
+                </div>
+                <div className="planning-grid">
+                  {planning.map((day, index) => (
+                    <div className="planning-day-card" key={index}>
+                      <div className="planning-day-head">
+                        <span className="planning-day-index">Jour {day.day || index + 1}</span>
+                        <strong>{day.title || `Jour ${day.day || index + 1}`}</strong>
+                      </div>
+                      <div className="planning-day-body">
+                        {day.matin && <p><span>Matin:</span> {day.matin}</p>}
+                        {day.apresMidi && <p><span>Après-midi:</span> {day.apresMidi}</p>}
+                        {day.soir && <p><span>Soir:</span> {day.soir}</p>}
+                      </div>
                     </div>
-                    <div className="excludes">
-                      <h4>✗ Non inclus</h4>
-                      <ul>
-                        {pack.excludes?.map((item, index) => (
-                          <li key={index}>
-                            <AlertCircle size={16} />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              )}
+              </section>
+            )}
 
-              {activeTab === 'itineraire' && (
-                <div className="itinerary-content">
-                  <div className="itinerary-timeline">
-                    {(showFullItinerary ? pack.itineraires : pack.itineraires.slice(0, 3)).map((jour, index) => (
-                      <div key={index} className="timeline-item">
-                        <div className="timeline-day">
-                          <span className="day-number">Jour {jour.jour}</span>
-                        </div>
-                        <div className="timeline-content">
-                          <div className="timeline-image">
-                            <img src={jour.image} alt={jour.titre} />
-                          </div>
-                          <div className="timeline-info">
-                            <h4>{jour.titre}</h4>
-                            <p>{jour.description}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+            <section className="pd-card pd-guarantees">
+              <div className="section-header">
+                <span className="section-ornament">*</span>
+                <h2>Nos engagements</h2>
+              </div>
+              <div className="guarantee-row">
+                {guarantees.map((item, index) => (
+                  <div className="guarantee-block" key={index}>
+                    <div className="g-icon-wrap">{item.icon}</div>
+                    <h4 className="g-title">{item.title}</h4>
+                    <p className="g-desc">{item.desc}</p>
                   </div>
-                  {pack.itineraires.length > 3 && (
-                    <button 
-                      className="show-more-btn"
-                      onClick={() => setShowFullItinerary(!showFullItinerary)}
-                    >
-                      {showFullItinerary ? (
-                        <>Voir moins <ChevronUp size={16} /></>
-                      ) : (
-                        <>Voir l'itinéraire complet <ChevronDown size={16} /></>
-                      )}
-                    </button>
-                  )}
+                ))}
+              </div>
+            </section>
+          </main>
+
+          <aside className="pd-sidebar">
+            <div className="price-card">
+              <div className="price-header">
+                <p className="price-label">Prix par personne</p>
+                <div className="price-amount">
+                  {Number(pack.prixTotal || 0).toLocaleString("fr-FR")}
+                  <span className="price-currency"> MAD</span>
                 </div>
-              )}
-
-              {activeTab === 'equipements' && (
-                <div className="equipements-content">
-                  <div className="equipements-grid">
-                    {pack.equipements?.map((equip, index) => (
-                      <div key={index} className="equipement-card">
-                        <div className="equipement-icon">{equip.icon}</div>
-                        <span>{equip.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'avis' && (
-                <div className="reviews-content">
-                  <div className="reviews-summary">
-                    <div className="average-rating">
-                      <span className="big-rating">{pack.note_moyenne}</span>
-                      <span className="rating-max">/5</span>
-                      <div className="rating-stars-large">
-                        {getRatingStars(pack.note_moyenne)}
-                      </div>
-                      <p>Basé sur {pack.nb_avis} avis</p>
-                    </div>
-                  </div>
-
-                  <div className="reviews-list">
-                    {reviews.map((review) => (
-                      <div key={review.id} className="review-item">
-                        <div className="reviewer-info">
-                          <img src={review.avatar} alt={review.user} className="reviewer-avatar" />
-                          <div>
-                            <h4>{review.user}</h4>
-                            <div className="reviewer-rating">
-                              {getRatingStars(review.note)}
-                            </div>
-                          </div>
-                          <span className="review-date">{review.date}</span>
-                        </div>
-                        <p className="review-comment">"{review.commentaire}"</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Colonne latérale - Réservation */}
-          <div className="sidebar">
-            <div className="booking-card">
-              <div className="price-section">
-                {pack.prix_promotion ? (
-                  <>
-                    <span className="old-price">{pack.prix}€</span>
-                    <span className="new-price">{pack.prix_promotion}€</span>
-                  </>
-                ) : (
-                  <span className="current-price">{pack.prix}€</span>
-                )}
-                <span className="price-unit">/ personne</span>
               </div>
 
-              <div className="booking-form">
-                <div className="form-group">
+              <div className="price-divider" />
+
+              <div className="booking-fields">
+                <div className="booking-field">
                   <label>
-                    <Calendar size={16} />
-                    Date de départ
+                    <span className="field-label"><Calendar size={13} /> Date de depart</span>
+                    <input
+                      type="date"
+                      value={departDate}
+                      onChange={(e) => setDepartDate(e.target.value)}
+                    />
                   </label>
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="form-input"
-                    min={new Date().toISOString().split('T')[0]}
-                  />
                 </div>
-
-                <div className="form-group">
-                  <label>
-                    <Users size={16} />
-                    Nombre de personnes
-                  </label>
-                  <div className="quantity-selector">
-                    <button 
-                      onClick={() => setNbPersonnes(Math.max(1, nbPersonnes - 1))}
-                      className="quantity-btn"
-                    >
-                      -
-                    </button>
-                    <span className="quantity-value">{nbPersonnes}</span>
-                    <button 
-                      onClick={() => setNbPersonnes(Math.min(10, nbPersonnes + 1))}
-                      className="quantity-btn"
-                    >
-                      +
-                    </button>
+                  <div className="booking-field">
+                    <label>
+                      <span className="field-label"><Users size={13} /> Voyageurs</span>
+                      <div className="counter-wrap">
+                      <button type="button" className="counter-btn" onClick={() => setPersons((p) => Math.max(1, p - 1))}>-</button>
+                      <span className="counter-val">{persons}</span>
+                      <button type="button" className="counter-btn" onClick={() => setPersons((p) => p + 1)}>+</button>
+                      </div>
+                    </label>
                   </div>
                 </div>
 
-                <div className="total-section">
+              <div className="price-divider" />
+
+              <div className="price-summary">
+                <div className="ps-row">
+                  <span>{persons} x {Number(pack.prixTotal || 0).toLocaleString("fr-FR")} MAD</span>
+                  <span>{total.toLocaleString("fr-FR")} MAD</span>
+                </div>
+                <div className="ps-row ps-total">
                   <span>Total</span>
-                  <span className="total-price">{calculateTotal()}€</span>
-                </div>
-
-                <button 
-                  className="reserve-btn"
-                  onClick={handleReservation}
-                  disabled={!selectedDate}
-                >
-                  Réserver maintenant
-                </button>
-
-                {!selectedDate && (
-                  <p className="date-warning">
-                    <AlertCircle size={14} />
-                    Veuillez sélectionner une date
-                  </p>
-                )}
-              </div>
-
-              <div className="contact-info">
-                <p>Une question ?</p>
-                <div className="contact-buttons">
-                  <button className="contact-btn phone">
-                    <Phone size={16} />
-                    Appeler
-                  </button>
-                  <button className="contact-btn email">
-                    <Mail size={16} />
-                    Email
-                  </button>
+                  <span>{total.toLocaleString("fr-FR")} MAD</span>
                 </div>
               </div>
-            </div>
 
-            <div className="guarantee-card">
-              <Shield size={24} />
-              <div>
-                <h4>Garantie satisfait</h4>
-                <p>Annulation gratuite jusqu'à 7 jours avant</p>
-              </div>
+              <button type="button" className="cta-btn" onClick={openReservationModal}>
+                Reserver maintenant
+                <span className="cta-arrow"></span>
+              </button>
+              <p className="cta-note">Aucun frais cache · Annulation flexible</p>
+              {reserveMessage && <p className="reserve-feedback">{reserveMessage}</p>}
             </div>
-          </div>
+          </aside>
         </div>
       </div>
 
-      <style jsx>{`
-        .pack-details-page {
-          background: #faf7f2;
-          min-height: 100vh;
-        }
-
-        .container {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 0 20px;
-        }
-
-        /* Fil d'Ariane */
-        .breadcrumb {
-          background: white;
-          padding: 15px 0;
-          border-bottom: 1px solid #eaeaea;
-        }
-
-        .breadcrumb .container {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .breadcrumb-link {
-          color: #666;
-          text-decoration: none;
-          transition: color 0.3s ease;
-        }
-
-        .breadcrumb-link:hover {
-          color: #0f4c75;
-        }
-
-        .breadcrumb-current {
-          color: #1e272e;
-          font-weight: 500;
-        }
-
-        /* En-tête */
-        .pack-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          margin: 30px 0;
-        }
-
-        .pack-title {
-          font-size: 2rem;
-          font-weight: 700;
-          color: #1e272e;
-          margin: 0 0 15px 0;
-        }
-
-        .pack-meta {
-          display: flex;
-          align-items: center;
-          gap: 20px;
-          flex-wrap: wrap;
-        }
-
-        .pack-location,
-        .pack-duration {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          color: #666;
-        }
-
-        .pack-rating {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .rating-stars {
-          display: flex;
-          gap: 2px;
-        }
-
-        .star {
-          color: #ddd;
-        }
-
-        .star.filled {
-          color: #ffb84d;
-        }
-
-        .rating-score {
-          font-weight: 700;
-          color: #1e272e;
-        }
-
-        .rating-count {
-          color: #999;
-        }
-
-        .header-actions {
-          display: flex;
-          gap: 10px;
-        }
-
-        .action-btn {
-          width: 45px;
-          height: 45px;
-          border: 2px solid #eaeaea;
-          border-radius: 50%;
-          background: white;
-          color: #666;
-          cursor: pointer;
-          transition: all 0.3s ease;
-        }
-
-        .action-btn.like:hover,
-        .action-btn.like.liked {
-          border-color: #ff6b6b;
-          color: #ff6b6b;
-        }
-
-        .action-btn.share:hover {
-          border-color: #0f4c75;
-          color: #0f4c75;
-        }
-
-        /* Galerie */
-        .gallery-section {
-          margin-bottom: 40px;
-        }
-
-        .main-image {
-          position: relative;
-          height: 500px;
-          border-radius: 20px;
-          overflow: hidden;
-          margin-bottom: 15px;
-        }
-
-        .main-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .gallery-nav {
-          position: absolute;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 50px;
-          height: 50px;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.8);
-          border: none;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.3s ease;
-        }
-
-        .gallery-nav.prev {
-          left: 20px;
-        }
-
-        .gallery-nav.next {
-          right: 20px;
-        }
-
-        .gallery-nav:hover {
-          background: white;
-          transform: translateY(-50%) scale(1.1);
-        }
-
-        .image-counter {
-          position: absolute;
-          bottom: 20px;
-          right: 20px;
-          background: rgba(0, 0, 0, 0.5);
-          color: white;
-          padding: 5px 15px;
-          border-radius: 50px;
-          font-size: 0.9rem;
-        }
-
-        .thumbnail-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 15px;
-        }
-
-        .thumbnail {
-          height: 100px;
-          border-radius: 10px;
-          overflow: hidden;
-          cursor: pointer;
-          border: 2px solid transparent;
-          transition: all 0.3s ease;
-          padding: 0;
-        }
-
-        .thumbnail.active {
-          border-color: #bf5700;
-        }
-
-        .thumbnail img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        /* Grille de contenu */
-        .content-grid {
-          display: grid;
-          grid-template-columns: 1fr 350px;
-          gap: 30px;
-          margin-bottom: 50px;
-        }
-
-        /* Tabs */
-        .tabs-nav {
-          display: flex;
-          gap: 20px;
-          border-bottom: 2px solid #eaeaea;
-          margin-bottom: 30px;
-        }
-
-        .tab-btn {
-          padding: 10px 0;
-          background: none;
-          border: none;
-          font-size: 1rem;
-          font-weight: 600;
-          color: #666;
-          cursor: pointer;
-          position: relative;
-        }
-
-        .tab-btn::after {
-          content: '';
-          position: absolute;
-          bottom: -2px;
-          left: 0;
-          width: 0;
-          height: 2px;
-          background: linear-gradient(90deg, #0f4c75, #bf5700);
-          transition: width 0.3s ease;
-        }
-
-        .tab-btn.active {
-          color: #0f4c75;
-        }
-
-        .tab-btn.active::after {
-          width: 100%;
-        }
-
-        /* Description */
-        .description-text {
-          line-height: 1.8;
-          color: #444;
-          margin-bottom: 30px;
-        }
-
-        .highlights h3 {
-          font-size: 1.2rem;
-          margin-bottom: 15px;
-        }
-
-        .highlights-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 15px;
-          margin-bottom: 30px;
-        }
-
-        .highlight-item {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 10px;
-          background: white;
-          border-radius: 10px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        }
-
-        .includes-excludes {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 30px;
-          margin-top: 30px;
-        }
-
-        .includes h4,
-        .excludes h4 {
-          margin-bottom: 15px;
-        }
-
-        .includes ul,
-        .excludes ul {
-          list-style: none;
-          padding: 0;
-        }
-
-        .includes li,
-        .excludes li {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 8px 0;
-          color: #666;
-        }
-
-        .includes li {
-          color: #28a745;
-        }
-
-        .excludes li {
-          color: #dc3545;
-        }
-
-        /* Itinéraire */
-        .itinerary-timeline {
-          margin-bottom: 20px;
-        }
-
-        .timeline-item {
-          display: flex;
-          gap: 20px;
-          margin-bottom: 20px;
-        }
-
-        .timeline-day {
-          min-width: 80px;
-        }
-
-        .day-number {
-          font-weight: 700;
-          color: #0f4c75;
-        }
-
-        .timeline-content {
-          flex: 1;
-          display: flex;
-          gap: 15px;
-          background: white;
-          padding: 15px;
-          border-radius: 12px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        }
-
-        .timeline-image {
-          width: 80px;
-          height: 80px;
-          border-radius: 8px;
-          overflow: hidden;
-        }
-
-        .timeline-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .timeline-info h4 {
-          margin: 0 0 5px 0;
-        }
-
-        .timeline-info p {
-          color: #666;
-          font-size: 0.9rem;
-        }
-
-        .show-more-btn {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin: 0 auto;
-          padding: 10px 20px;
-          background: none;
-          border: 2px solid #eaeaea;
-          border-radius: 50px;
-          color: #666;
-          cursor: pointer;
-          transition: all 0.3s ease;
-        }
-
-        .show-more-btn:hover {
-          border-color: #0f4c75;
-          color: #0f4c75;
-        }
-
-        /* Équipements */
-        .equipements-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 15px;
-        }
-
-        .equipement-card {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 15px;
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        }
-
-        .equipement-icon {
-          color: #0f4c75;
-        }
-
-        /* Avis */
-        .reviews-summary {
-          text-align: center;
-          padding: 20px;
-          background: white;
-          border-radius: 12px;
-          margin-bottom: 30px;
-        }
-
-        .average-rating {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-
-        .big-rating {
-          font-size: 3rem;
-          font-weight: 800;
-          color: #0f4c75;
-          line-height: 1;
-        }
-
-        .rating-max {
-          color: #999;
-        }
-
-        .reviews-list {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-
-        .review-item {
-          padding: 20px;
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        }
-
-        .reviewer-info {
-          display: flex;
-          align-items: center;
-          gap: 15px;
-          margin-bottom: 15px;
-        }
-
-        .reviewer-avatar {
-          width: 50px;
-          height: 50px;
-          border-radius: 50%;
-          object-fit: cover;
-        }
-
-        .reviewer-info h4 {
-          margin: 0 0 5px 0;
-        }
-
-        .review-date {
-          margin-left: auto;
-          color: #999;
-          font-size: 0.9rem;
-        }
-
-        .review-comment {
-          color: #666;
-          line-height: 1.6;
-        }
-
-        /* Sidebar */
-        .sidebar {
-          position: sticky;
-          top: 20px;
-          height: fit-content;
-        }
-
-        .booking-card {
-          background: white;
-          border-radius: 20px;
-          padding: 25px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-          margin-bottom: 20px;
-        }
-
-        .price-section {
-          text-align: center;
-          margin-bottom: 25px;
-        }
-
-        .old-price {
-          font-size: 1.2rem;
-          color: #999;
-          text-decoration: line-through;
-          margin-right: 10px;
-        }
-
-        .new-price,
-        .current-price {
-          font-size: 2rem;
-          font-weight: 700;
-          color: #bf5700;
-        }
-
-        .price-unit {
-          color: #999;
-          font-size: 0.9rem;
-        }
-
-        .booking-form {
-          margin-bottom: 20px;
-        }
-
-        .form-group {
-          margin-bottom: 15px;
-        }
-
-        .form-group label {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-weight: 600;
-          margin-bottom: 8px;
-          color: #1e272e;
-        }
-
-        .form-input {
-          width: 100%;
-          padding: 12px;
-          border: 2px solid #eaeaea;
-          border-radius: 12px;
-          font-size: 1rem;
-          transition: all 0.3s ease;
-        }
-
-        .form-input:focus {
-          outline: none;
-          border-color: #0f4c75;
-        }
-
-        .quantity-selector {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 20px;
-          padding: 10px;
-          border: 2px solid #eaeaea;
-          border-radius: 12px;
-        }
-
-        .quantity-btn {
-          width: 35px;
-          height: 35px;
-          border: none;
-          border-radius: 8px;
-          background: #f8f9fa;
-          color: #1e272e;
-          font-size: 1.2rem;
-          cursor: pointer;
-          transition: all 0.3s ease;
-        }
-
-        .quantity-btn:hover {
-          background: #0f4c75;
-          color: white;
-        }
-
-        .quantity-value {
-          font-size: 1.2rem;
-          font-weight: 600;
-        }
-
-        .total-section {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 15px 0;
-          border-top: 2px solid #eaeaea;
-          border-bottom: 2px solid #eaeaea;
-          margin-bottom: 20px;
-        }
-
-        .total-price {
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: #bf5700;
-        }
-
-        .reserve-btn {
-          width: 100%;
-          padding: 15px;
-          background: linear-gradient(135deg, #0f4c75, #bf5700);
-          color: white;
-          border: none;
-          border-radius: 12px;
-          font-size: 1.1rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .reserve-btn:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 25px rgba(191, 87, 0, 0.3);
-        }
-
-        .reserve-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .date-warning {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          margin-top: 10px;
-          color: #bf5700;
-          font-size: 0.9rem;
-        }
-
-        .contact-info {
-          text-align: center;
-        }
-
-        .contact-info p {
-          color: #666;
-          margin-bottom: 10px;
-        }
-
-        .contact-buttons {
-          display: flex;
-          gap: 10px;
-        }
-
-        .contact-btn {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          padding: 10px;
-          border: 2px solid #eaeaea;
-          border-radius: 10px;
-          background: white;
-          cursor: pointer;
-          transition: all 0.3s ease;
-        }
-
-        .contact-btn.phone:hover {
-          border-color: #28a745;
-          color: #28a745;
-        }
-
-        .contact-btn.email:hover {
-          border-color: #0f4c75;
-          color: #0f4c75;
-        }
-
-        .guarantee-card {
-          display: flex;
-          align-items: center;
-          gap: 15px;
-          padding: 20px;
-          background: linear-gradient(135deg, #f8f9fa, #ffffff);
-          border-radius: 16px;
-        }
-
-        .guarantee-card h4 {
-          margin: 0 0 5px 0;
-          color: #1e272e;
-        }
-
-        .guarantee-card p {
-          margin: 0;
-          color: #666;
-          font-size: 0.9rem;
-        }
-
-        /* Responsive */
-        @media (max-width: 1024px) {
-          .content-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .sidebar {
-            position: static;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .pack-header {
-            flex-direction: column;
-            gap: 15px;
-          }
-
-          .pack-title {
-            font-size: 1.5rem;
-          }
-
-          .pack-meta {
-            gap: 10px;
-          }
-
-          .main-image {
-            height: 300px;
-          }
-
-          .thumbnail-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-
-          .tabs-nav {
-            overflow-x: auto;
-            padding-bottom: 5px;
-          }
-
-          .tab-btn {
-            white-space: nowrap;
-          }
-
-          .includes-excludes {
-            grid-template-columns: 1fr;
-          }
-
-          .timeline-item {
-            flex-direction: column;
-            gap: 10px;
-          }
-
-          .timeline-content {
-            flex-direction: column;
-          }
-
-          .timeline-image {
-            width: 100%;
-            height: 150px;
-          }
-        }
-      `}</style>
-    </div>
+      {showReserveModal && (
+        <div className="reserve-modal-overlay" onClick={() => !reserveLoading && setShowReserveModal(false)}>
+          <div className="reserve-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="reserve-modal-header">
+              <div>
+                <p className="reserve-kicker">Confirmation de réservation</p>
+                <h3>{pack.nomPack}</h3>
+              </div>
+              <button
+                type="button"
+                className="reserve-close"
+                onClick={() => setShowReserveModal(false)}
+                disabled={reserveLoading}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="reserve-modal-body">
+              <div className="reserve-summary-card">
+                <div className="reserve-summary-row">
+                  <span>Destination</span>
+                  <strong>{pack.destination || "Maroc"}</strong>
+                </div>
+                <div className="reserve-summary-row">
+                  <span>Date de départ</span>
+                  <strong>{departDate}</strong>
+                </div>
+                <div className="reserve-summary-row">
+                  <span>Voyageurs</span>
+                  <strong>{persons}</strong>
+                </div>
+                <div className="reserve-summary-row total">
+                  <span>Total</span>
+                  <strong>{total.toLocaleString("fr-FR")} MAD</strong>
+                </div>
+              </div>
+              <p className="reserve-note">
+                En confirmant, votre réservation sera enregistrée avec votre compte utilisateur et le pack choisi.
+              </p>
+            </div>
+
+            <div className="reserve-modal-actions">
+              <button
+                type="button"
+                className="reserve-cancel"
+                onClick={() => setShowReserveModal(false)}
+                disabled={reserveLoading}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="reserve-confirm"
+                onClick={confirmReservation}
+                disabled={reserveLoading}
+              >
+                {reserveLoading ? "Enregistrement..." : "Confirmer la réservation"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Footer />
+      <style>{styles}</style>
+    </>
   );
 };
+
+const loadingStyles = `
+  .loading-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f8f5ef;
+    gap: 24px;
+  }
+  .loading-ring {
+    display: inline-block;
+    position: relative;
+    width: 56px;
+    height: 56px;
+  }
+  .loading-ring div {
+    box-sizing: border-box;
+    display: block;
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    margin: 6px;
+    border: 3px solid transparent;
+    border-top-color: #8b6914;
+    border-radius: 50%;
+    animation: ring-spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  }
+  .loading-ring div:nth-child(1) { animation-delay: -0.45s; }
+  .loading-ring div:nth-child(2) { animation-delay: -0.3s; }
+  .loading-ring div:nth-child(3) { animation-delay: -0.15s; }
+  @keyframes ring-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  .loading-text { color: #6b5c3e; font-size: 1.1rem; font-style: italic; }
+`;
+
+const notFoundStyles = `
+  .not-found {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: #f8f5ef;
+  }
+  .nf-icon { font-size: 2rem; color: #8b6914; }
+  .not-found h2 { font-size: 1.6rem; color: #2c1d0e; margin: 0; }
+  .back-btn { color: #8b6914; text-decoration: none; }
+`;
+
+const styles = `
+  .pd-root {
+    background: #f8f5ef;
+    min-height: 100vh;
+    color: #2c1d0e;
+  }
+  .pd-hero {
+    position: relative;
+    height: 480px;
+    background-size: cover;
+    background-position: center;
+  }
+  .pd-hero-veil {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(20,12,5,0.25), rgba(20,12,5,0.85));
+  }
+  .pd-hero-inner {
+    position: relative;
+    z-index: 2;
+    max-width: 1260px;
+    margin: 0 auto;
+    padding: 36px 40px 48px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .pd-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255,255,255,0.85);
+    text-decoration: none;
+  }
+  .pd-hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: #d4aa55;
+    margin-bottom: 10px;
+  }
+  .pd-hero-title {
+    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    color: #fff;
+    margin-bottom: 18px;
+  }
+  .pd-hero-badges {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 100px;
+  }
+  .badge-gold {
+    background: rgba(212,170,85,0.25);
+    color: #f0d080;
+  }
+  .pd-layout {
+    max-width: 1260px;
+    margin: 0 auto;
+    padding: 48px 40px 80px;
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 40px;
+    align-items: start;
+  }
+  .pd-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 28px;
+    box-shadow: 0 2px 24px rgba(44,29,14,0.07);
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  .section-ornament {
+    color: #d4aa55;
+    font-size: 0.7rem;
+  }
+  .section-header h2 {
+    font-size: 1.55rem;
+    color: #2c1d0e;
+  }
+  .pd-gallery { padding: 20px; }
+  .gallery-stage {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    height: 360px;
+  }
+  .gallery-main {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .gallery-label {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    background: rgba(20,12,5,0.55);
+    color: #fff;
+    padding: 5px 14px;
+    border-radius: 100px;
+  }
+  .gallery-strip {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    overflow-x: auto;
+  }
+  .gallery-thumb {
+    position: relative;
+    flex-shrink: 0;
+    width: 110px;
+    height: 72px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    cursor: pointer;
+    background: none;
+    padding: 0;
+  }
+  .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .gallery-thumb.active { border-color: #d4aa55; }
+  .thumb-active-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #d4aa55, #c9843c);
+  }
+  .pd-desc {
+    font-size: 0.97rem;
+    line-height: 1.8;
+    color: #5a4535;
+  }
+  .inclusion-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .inclusion-card {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid #ede8df;
+  }
+  .inc-img-wrap {
+    position: relative;
+    height: 100px;
+    background: #e8e0d4;
+  }
+  .inc-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .inc-img-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a89070;
+    background: #f0ebe3;
+  }
+  .inc-img-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 50%, rgba(20,12,5,0.35));
+  }
+  .inc-body { padding: 14px 16px; }
+  .inc-category {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #c9843c;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .inc-detail {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    font-size: 0.88rem;
+    color: #5a4535;
+    line-height: 1.5;
+  }
+  .inc-check { color: #8b9e3a; flex-shrink: 0; margin-top: 2px; }
+  .planning-grid {
+    display: grid;
+    gap: 14px;
+  }
+  .planning-day-card {
+    border: 1px solid #ede8df;
+    border-radius: 14px;
+    padding: 16px;
+    background: linear-gradient(180deg, #fff 0%, #faf7f2 100%);
+  }
+  .planning-day-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .planning-day-index {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #c9843c;
+  }
+  .planning-day-body p {
+    margin: 0 0 8px;
+    color: #5a4535;
+    line-height: 1.6;
+  }
+  .planning-day-body span {
+    font-weight: 700;
+    color: #2c1d0e;
+  }
+  .pd-guarantees {
+    background: linear-gradient(145deg, #2c1d0e, #4a3020);
+    color: #fff;
+  }
+  .pd-guarantees .section-header h2 { color: #f5e9d0; }
+  .guarantee-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .guarantee-block {
+    text-align: center;
+    padding: 20px 16px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.07);
+  }
+  .g-icon-wrap {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: rgba(212,170,85,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    color: #d4aa55;
+  }
+  .g-title { font-size: 1.05rem; color: #f5e9d0; margin-bottom: 6px; }
+  .g-desc { font-size: 0.82rem; color: rgba(245,233,208,0.65); line-height: 1.6; }
+  .pd-sidebar { position: sticky; top: 32px; }
+  .price-card {
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 32px rgba(44,29,14,0.1);
+    border: 1px solid #ede8df;
+  }
+  .price-header {
+    padding: 28px 28px 24px;
+    background: linear-gradient(135deg, #2c1d0e 0%, #4a3020 100%);
+  }
+  .price-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: rgba(212,170,85,0.8);
+    margin-bottom: 8px;
+  }
+  .price-amount { font-size: 2.8rem; color: #fff; line-height: 1; }
+  .price-currency { font-size: 1.2rem; color: rgba(255,255,255,0.6); }
+  .price-divider { height: 1px; background: #ede8df; }
+  .booking-fields { padding: 22px 28px; display: grid; gap: 18px; }
+  .booking-field label { display: grid; gap: 8px; }
+  .field-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    color: #8b7355;
+  }
+  .booking-field input[type="date"] {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid #e4ddd4;
+    border-radius: 10px;
+    color: #2c1d0e;
+    background: #faf7f2;
+    outline: none;
+  }
+  .counter-wrap {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid #e4ddd4;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #faf7f2;
+  }
+  .counter-btn {
+    background: none;
+    border: none;
+    width: 42px;
+    height: 42px;
+    cursor: pointer;
+    color: #8b6914;
+  }
+  .counter-val {
+    flex: 1;
+    text-align: center;
+    border-left: 1px solid #e4ddd4;
+    border-right: 1px solid #e4ddd4;
+    line-height: 42px;
+  }
+  .price-summary { padding: 18px 28px; display: grid; gap: 10px; }
+  .ps-row { display: flex; justify-content: space-between; color: #8b7355; }
+  .ps-total {
+    font-size: 1.05rem;
+    color: #2c1d0e;
+    font-weight: 600;
+    padding-top: 10px;
+    border-top: 1px solid #ede8df;
+  }
+  .cta-btn {
+    width: calc(100% - 56px);
+    margin: 0 28px 8px;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #2c1d0e 0%, #8b6914 50%, #c9843c 100%);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  .cta-note {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #a89070;
+    padding: 0 28px 22px;
+  }
+  .reserve-feedback {
+    margin: 0 28px 20px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #eef6fb;
+    color: #0f4c75;
+    font-size: 0.88rem;
+  }
+  .reserve-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 12, 5, 0.55);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+  }
+  .reserve-modal {
+    width: 100%;
+    max-width: 520px;
+    background: #fff;
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.22);
+  }
+  .reserve-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 16px;
+    padding: 22px 24px;
+    border-bottom: 1px solid #ede8df;
+    background: linear-gradient(135deg, #faf7f2, #fff);
+  }
+  .reserve-kicker {
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #c9843c;
+    margin-bottom: 6px;
+  }
+  .reserve-modal-header h3 {
+    font-size: 1.35rem;
+    color: #2c1d0e;
+    margin: 0;
+  }
+  .reserve-close {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .reserve-modal-body {
+    padding: 22px 24px;
+  }
+  .reserve-summary-card {
+    border: 1px solid #ede8df;
+    border-radius: 18px;
+    padding: 16px;
+    background: #faf7f2;
+    display: grid;
+    gap: 12px;
+  }
+  .reserve-summary-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    color: #5a4535;
+  }
+  .reserve-summary-row strong {
+    color: #2c1d0e;
+  }
+  .reserve-summary-row.total {
+    padding-top: 12px;
+    border-top: 1px solid #e8dfd4;
+    font-size: 1.05rem;
+  }
+  .reserve-note {
+    margin-top: 14px;
+    font-size: 0.88rem;
+    color: #6b5c4b;
+    line-height: 1.6;
+  }
+  .reserve-modal-actions {
+    display: flex;
+    gap: 12px;
+    padding: 0 24px 24px;
+  }
+  .reserve-cancel,
+  .reserve-confirm {
+    flex: 1;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 18px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .reserve-cancel {
+    background: #f1f5f9;
+    color: #334155;
+  }
+  .reserve-confirm {
+    background: linear-gradient(135deg, #0f4c75, #bf5700);
+    color: #fff;
+  }
+  .reserve-confirm:disabled,
+  .reserve-cancel:disabled,
+  .reserve-close:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  @media (max-width: 1080px) {
+    .pd-layout {
+      grid-template-columns: 1fr;
+      padding: 32px 24px 60px;
+    }
+    .pd-sidebar { position: static; }
+  }
+  @media (max-width: 700px) {
+    .pd-hero { height: 380px; }
+    .pd-hero-inner { padding: 24px 20px 32px; }
+    .pd-card { padding: 22px 18px; }
+    .inclusion-grid { grid-template-columns: 1fr; }
+    .guarantee-row { grid-template-columns: 1fr; }
+    .gallery-stage { height: 240px; }
+    .reserve-modal-actions { flex-direction: column; }
+  }
+`;
 
 export default PackDetails;

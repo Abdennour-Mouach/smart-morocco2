@@ -104,7 +104,7 @@ const Register = () => {
       role: "ROLE_USER"
     };
 
-    await api.post("/utilisateurs", newUser);
+    await api.post("/api/utilisateurs", newUser);
 
     setMessage("Inscription réussie ! Redirection...");
     setMessageType("success");
@@ -193,7 +193,7 @@ const Register = () => {
           {/* Logo */}
           <Link to="/">
             <img
-              src="images/logo.png"
+              src="/images/logo.png"
               alt="Smart Morocco"
               width="150"
               height="150"
@@ -221,6 +221,8 @@ const Register = () => {
                     placeholder="Votre nom"
                     value={formData.nom}
                     onChange={handleChange}
+                    style={{ paddingLeft: "50px" }}
+
                     required
                     className="form-input"
                   />
@@ -238,6 +240,8 @@ const Register = () => {
                     placeholder="Votre prénom"
                     value={formData.prenom}
                     onChange={handleChange}
+                    style={{ paddingLeft: "50px" }}
+
                     required
                     className="form-input"
                   />
@@ -257,6 +261,8 @@ const Register = () => {
                   placeholder="exemple@email.com"
                   value={formData.email}
                   onChange={handleChange}
+                  style={{ paddingLeft: "50px" }}
+
                   required
                   className="form-input"
                 />
@@ -275,6 +281,8 @@ const Register = () => {
                   placeholder="+212 XXX-XXXXXX"
                   value={formData.telephone}
                   onChange={handleChange}
+                  style={{ paddingLeft: "50px" }}
+
                   required
                   className="form-input"
                 />
@@ -295,6 +303,8 @@ const Register = () => {
                   placeholder="••••••••"
                   value={formData.motDePasse}
                   onChange={handleChange}
+                  style={{ paddingLeft: "50px" }}
+
                   required
                   className="form-input"
                 />
@@ -337,6 +347,8 @@ const Register = () => {
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={formData.confirmMotDePasse}
+                  style={{ paddingLeft: "50px" }}
+
                   onChange={handleChange}
                   required
                   className="form-input"

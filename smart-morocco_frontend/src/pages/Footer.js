@@ -4,7 +4,7 @@ import { FaInstagram, FaFacebookF, FaLinkedinIn, FaWhatsapp } from "react-icons/
 const Footer = () => {
   const deepBlue = "#0E2576";
   const deepOchre = "#CE7B15";
-  const softWhite = "#F9F9F9";
+  const softWhite = "#FDF9F4";
 
   return (
     <footer className="smart-footer">
@@ -12,7 +12,7 @@ const Footer = () => {
         {/* Identité - Brand Section */}
         <div className="footer-brand">
           <img 
-            src="images/logo.png" 
+            src="/images/logo.png" 
             alt="Smart Morocco" 
             className="footer-logo" 
           />
@@ -24,7 +24,7 @@ const Footer = () => {
 
         {/* Navigation - Explore */}
         <div className="footer-section">
-          <h4 className="section-title">Explorer</h4>
+          <h4 className="section-title1">Explorer</h4>
           <ul className="footer-links">
             <li><a href="/">Accueil</a></li>
             <li><a href="/about">À propos</a></li>
@@ -35,7 +35,7 @@ const Footer = () => {
 
         {/* Conciergerie - Contact */}
         <div className="footer-section">
-          <h4 className="section-title">Conciergerie</h4>
+          <h4 className="section-title1">Conciergerie</h4>
           <div className="contact-details">
             <a href="tel:+2120698653210" className="contact-link">+212 6 98 65 32 10</a>
             <a href="mailto:smartmorocoo@gmail.com" className="contact-link">smartmorocoo@gmail.com</a>
@@ -43,9 +43,9 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Newsletter ou Social - L'élégance sociale */}
+        {/* Social - L'élégance sociale */}
         <div className="footer-section">
-          <h4 className="section-title">Suivez-nous</h4>
+          <h4 className="section-title1">Suivez-nous</h4>
           <div className="social-icons-grid">
             <a href="#" aria-label="Instagram" className="icon-wrapper"><FaInstagram /></a>
             <a href="#" aria-label="Facebook" className="icon-wrapper"><FaFacebookF /></a>
@@ -68,80 +68,112 @@ const Footer = () => {
 
       <style jsx>{`
         .smart-footer {
-          background-color: #ffffff;
-          padding: 120px 0 60px 0;
-          font-family: 'Inter', sans-serif;
-          border-top: 1px solid #f0f0f0;
-          color: #121212;
+          background: linear-gradient(145deg, #fefaf5 0%, #fff6ed 100%);
+          padding: 100px 0 50px 0;
+          font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+          border-top: 1px solid rgba(201, 168, 123, 0.2);
+          position: relative;
+          overflow: hidden;
+        }
+
+        /* Élément décoratif (optionnel) */
+        .smart-footer::before {
+          content: '';
+          position: absolute;
+          top: -50px;
+          left: -50px;
+          width: 200px;
+          height: 200px;
+          background: radial-gradient(circle, rgba(191, 87, 0, 0.05), transparent);
+          border-radius: 50%;
+          pointer-events: none;
         }
 
         .footer-container {
-          max-width: 1300px;
+          max-width: 1400px;
           margin: 0 auto;
           display: grid;
           grid-template-columns: 1.8fr 0.8fr 1fr 1fr;
           gap: 80px;
-          padding: 0 50px;
+          padding: 0 60px;
+          position: relative;
+          z-index: 2;
         }
 
+        /* Logo */
         .footer-logo {
-          height: 65px;
-          margin-bottom: 35px;
-          transition: transform 0.4s ease;
+          height: 180px;
+          margin-bottom: 30px;
+          transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+        }
+        .footer-logo:hover {
+          transform: translateY(-3px);
         }
 
         .footer-tagline {
           font-size: 15px;
-          color: #555;
-          line-height: 1.8;
-          font-weight: 300;
-          letter-spacing: 0.3px;
+          color: #5a4a3a;
+          line-height: 1.7;
+          font-weight: 400;
+          letter-spacing: 0.2px;
         }
 
         .brand-accent {
           color: ${deepOchre};
           font-style: italic;
-          font-family: 'Playfair Display', serif; /* Optionnel : pour un look luxe */
+          font-family: 'Playfair Display', 'Times New Roman', serif;
+          font-weight: 500;
         }
 
-        /* --- Titres Professionnels --- */
-        .section-title {
+        /* Titres des sections */
+        .section-title1 {
           font-size: 12px;
-          font-weight: 700;
+          font-weight: 600;
           text-transform: uppercase;
-          margin-bottom: 40px;
-          color: #121212;
-          letter-spacing: 4px;
+          margin-bottom: 35px;
+          color: #2c1a12;
+          letter-spacing: 3px;
           position: relative;
+          display: inline-block;
         }
 
-        .section-title::after {
+        .section-title1::after {
           content: "";
           position: absolute;
-          bottom: -10px;
+          bottom: -12px;
           left: 0;
-          width: 20px;
-          height: 1px;
-          background: ${deepOchre};
+          width: 30px;
+          height: 2px;
+          background: linear-gradient(90deg, ${deepOchre}, #c9a87b);
+          transition: width 0.3s ease;
         }
 
+        .footer-section:hover .section-title::after {
+          width: 50px;
+        }
+
+        /* Liens de navigation */
         .footer-links {
           list-style: none;
           padding: 0;
+          margin: 0;
         }
 
-        .footer-links li { margin-bottom: 18px; }
+        .footer-links li {
+          margin-bottom: 16px;
+        }
 
         .footer-links a {
           text-decoration: none;
-          color: #666;
+          color: #6b5a4a;
           font-size: 14px;
           font-weight: 400;
           transition: all 0.3s ease;
           position: relative;
+          display: inline-block;
         }
 
-        /* Effet de ligne sous les liens */
         .footer-links a::after {
           content: '';
           position: absolute;
@@ -150,118 +182,216 @@ const Footer = () => {
           bottom: -4px;
           left: 0;
           background-color: ${deepOchre};
-          transition: width 0.3s ease;
+          transition: width 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
         }
 
-        .footer-links a:hover { color: #121212; }
-        .footer-links a:hover::after { width: 100%; }
+        .footer-links a:hover {
+          color: #2c1a12;
+          transform: translateX(4px);
+        }
+        .footer-links a:hover::after {
+          width: 100%;
+        }
 
+        /* Coordonnées */
         .contact-details {
           display: flex;
           flex-direction: column;
-          gap: 15px;
+          gap: 16px;
         }
 
         .contact-link {
           font-size: 14px;
-          color: #666;
+          color: #6b5a4a;
           text-decoration: none;
-          transition: color 0.3s;
-          font-weight: 400;
+          transition: color 0.3s, transform 0.2s;
+          display: inline-block;
         }
 
-        .contact-link:hover { color: ${deepBlue}; }
+        .contact-link:hover {
+          color: ${deepBlue};
+          transform: translateX(4px);
+        }
 
         .address-text {
           font-size: 13px;
-          color: #999;
-          margin-top: 5px;
+          color: #9b8a7a;
+          margin-top: 4px;
+          font-style: normal;
         }
 
-        /* --- Icônes Minimalistes --- */
+        /* Icônes sociales modernisées */
         .social-icons-grid {
           display: flex;
-          gap: 15px;
+          gap: 18px;
         }
 
         .icon-wrapper {
-          color: #121212;
+          color: #5a4a3a;
           font-size: 18px;
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 45px;
-          height: 45px;
-          border: 1px solid #e5e5e5;
+          width: 48px;
+          height: 48px;
+          background: rgba(255, 255, 255, 0.6);
+          backdrop-filter: blur(4px);
+          border: 1px solid rgba(201, 168, 123, 0.3);
           border-radius: 50%;
-          transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+          transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
         }
 
         .icon-wrapper:hover {
-          background-color: #121212;
-          color: #ffffff;
-          border-color: #121212;
-          transform: translateY(-3px);
+          background: ${deepOchre};
+          border-color: ${deepOchre};
+          color: white;
+          transform: translateY(-5px);
+          box-shadow: 0 10px 20px rgba(206, 123, 21, 0.2);
         }
 
-        /* --- Footer Bottom - Bar de Finition --- */
+        /* Footer bottom */
         .footer-bottom {
-          margin-top: 100px;
-          padding: 40px 50px 0;
-          border-top: 1px solid #f5f5f5;
+          margin-top: 80px;
+          padding: 35px 60px 0;
+          border-top: 1px solid rgba(201, 168, 123, 0.2);
         }
 
         .bottom-content {
-          max-width: 1300px;
+          max-width: 1400px;
           margin: 0 auto;
           display: flex;
           justify-content: space-between;
           align-items: center;
+          flex-wrap: wrap;
+          gap: 20px;
         }
 
         .copyright {
           font-size: 11px;
           letter-spacing: 1.5px;
-          color: #aaa;
+          color: #9b8a7a;
+          font-weight: 400;
         }
 
         .legal-links {
           display: flex;
-          gap: 30px;
+          gap: 35px;
         }
 
         .legal-links a {
           text-decoration: none;
           font-size: 11px;
-          color: #aaa;
+          color: #9b8a7a;
           text-transform: uppercase;
           letter-spacing: 1px;
           transition: color 0.3s ease;
+          position: relative;
         }
 
-        .legal-links a:hover { color: ${deepOchre}; }
+        .legal-links a::after {
+          content: '';
+          position: absolute;
+          bottom: -4px;
+          left: 0;
+          width: 0;
+          height: 1px;
+          background: ${deepOchre};
+          transition: width 0.2s;
+        }
 
-        @media (max-width: 1024px) {
-          .footer-container { 
-            grid-template-columns: 1fr 1fr; 
+        .legal-links a:hover {
+          color: #2c1a12;
+        }
+        .legal-links a:hover::after {
+          width: 100%;
+        }
+
+        /* Responsive */
+        @media (max-width: 1100px) {
+          .footer-container {
+            gap: 50px;
+            padding: 0 40px;
+          }
+        }
+
+        @media (max-width: 900px) {
+          .footer-container {
+            grid-template-columns: 1fr 1fr;
             gap: 50px;
           }
+          .footer-brand {
+            grid-column: span 2;
+          }
+          .footer-bottom {
+            padding: 30px 40px 0;
+          }
         }
 
-        @media (max-width: 600px) {
-          .smart-footer { padding: 80px 0 40px 0; }
-          .footer-container { 
-            grid-template-columns: 1fr; 
-            text-align: center; 
+        @media (max-width: 640px) {
+          .smart-footer {
+            padding: 70px 0 40px;
           }
-          .section-title::after { left: 50%; transform: translateX(-50%); }
-          .social-icons-grid { justify-content: center; }
-          .bottom-content { 
-            flex-direction: column; 
-            gap: 25px; 
+          .footer-container {
+            grid-template-columns: 1fr;
+            gap: 45px;
+            text-align: center;
+            padding: 0 25px;
           }
-          .legal-links { justify-content: center; }
+          .footer-brand {
+            grid-column: auto;
+          }
+          .section-title::after {
+            left: 50%;
+            transform: translateX(-50%);
+          }
+          .section-title {
+            display: block;
+            text-align: center;
+          }
+          .footer-links a::after {
+            left: 50%;
+            transform: translateX(-50%);
+          }
+          .footer-links a:hover {
+            transform: translateX(0);
+          }
+          .contact-link:hover {
+            transform: translateX(0);
+          }
+          .social-icons-grid {
+            justify-content: center;
+          }
+          .bottom-content {
+            flex-direction: column;
+            text-align: center;
+          }
+          .legal-links {
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+          }
         }
+
+        /* Animation d'apparition légère */
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .footer-container > * {
+          animation: fadeUp 0.6s ease-out forwards;
+          opacity: 0;
+        }
+        .footer-container > :nth-child(1) { animation-delay: 0.1s; }
+        .footer-container > :nth-child(2) { animation-delay: 0.2s; }
+        .footer-container > :nth-child(3) { animation-delay: 0.3s; }
+        .footer-container > :nth-child(4) { animation-delay: 0.4s; }
       `}</style>
     </footer>
   );

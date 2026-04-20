@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import Footer from "./Footer";
+
 import { 
   Search, 
   Filter, 
@@ -61,26 +63,28 @@ const Packs = () => {
   const fetchPacks = async () => {
     setIsLoading(true);
     try {
-      const res = await api.get("/packs");
+      const res = await api.get("/api/packs");
       setPacks(res.data);
       setFilteredPacks(res.data);
       
       // Extraire les destinations uniques
-      const uniqueDestinations = [...new Set(res.data.map(pack => pack.destination))];
+      const uniqueDestinations = [...new Set(res.data.map(pack => pack.destination).filter(Boolean))];
       setDestinations(uniqueDestinations);
       
       // Calculer les statistiques
-      const prices = res.data.map(pack => pack.prix);
-      const ratings = res.data.map(pack => pack.note_moyenne || 0);
+      const prices = res.data.map(pack => pack.prixTotal || 0);
+      const ratings = res.data.map(pack => pack.noteMoyenne || 0);
+      const minPrice = prices.length ? Math.min(...prices) : 0;
+      const maxPrice = prices.length ? Math.max(...prices) : 0;
       
       setStats({
         total: res.data.length,
-        minPrice: Math.min(...prices),
-        maxPrice: Math.max(...prices),
-        avgRating: (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
+        minPrice,
+        maxPrice,
+        avgRating: ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : 0
       });
       
-      setPriceRange([Math.min(...prices), Math.max(...prices)]);
+      setPriceRange([minPrice, maxPrice]);
     } catch (err) {
       console.error("Erreur lors du chargement des packs:", err);
     } finally {
@@ -95,7 +99,7 @@ const Packs = () => {
     // Filtre par recherche
     if (searchTerm) {
       result = result.filter(pack => 
-        pack.titre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pack.nomPack?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         pack.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         pack.destination?.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -110,30 +114,37 @@ const Packs = () => {
 
     // Filtre par prix
     result = result.filter(pack => 
-      pack.prix >= priceRange[0] && pack.prix <= priceRange[1]
+      (pack.prixTotal || 0) >= priceRange[0] && (pack.prixTotal || 0) <= priceRange[1]
     );
 
     // Filtre par durée
     if (selectedDuration) {
-      result = result.filter(pack => pack.duree === selectedDuration);
+      result = result.filter(pack => {
+        const jours = pack.duree || 0;
+        if (selectedDuration === "3-5 jours") return jours >= 3 && jours <= 5;
+        if (selectedDuration === "6-8 jours") return jours >= 6 && jours <= 8;
+        if (selectedDuration === "9-12 jours") return jours >= 9 && jours <= 12;
+        if (selectedDuration === "13+ jours") return jours >= 13;
+        return true;
+      });
     }
 
     // Tri
     switch (sortBy) {
       case "prix-asc":
-        result.sort((a, b) => a.prix - b.prix);
+        result.sort((a, b) => (a.prixTotal || 0) - (b.prixTotal || 0));
         break;
       case "prix-desc":
-        result.sort((a, b) => b.prix - a.prix);
+        result.sort((a, b) => (b.prixTotal || 0) - (a.prixTotal || 0));
         break;
       case "note":
-        result.sort((a, b) => (b.note_moyenne || 0) - (a.note_moyenne || 0));
+        result.sort((a, b) => (b.noteMoyenne || 0) - (a.noteMoyenne || 0));
         break;
       case "duree":
-        result.sort((a, b) => (a.duree_nombre || 0) - (b.duree_nombre || 0));
+        result.sort((a, b) => (a.duree || 0) - (b.duree || 0));
         break;
       default:
-        result.sort((a, b) => (b.popularite || 0) - (a.popularite || 0));
+        result.sort((a, b) => (b.noteMoyenne || 0) - (a.noteMoyenne || 0));
     }
 
     setFilteredPacks(result);
@@ -475,7 +486,7 @@ const Packs = () => {
             {filteredPacks.length > 0 ? (
               <div className={`packs-grid ${viewMode}`}>
                 {filteredPacks.map(pack => (
-                  <PackCard key={pack.id_pack} pack={pack} />
+                  <PackCard key={pack.id} pack={pack} />
                 ))}
               </div>
             ) : (
@@ -493,7 +504,7 @@ const Packs = () => {
           </main>
         </div>
       </div>
-
+      <Footer />
       <style jsx>{`
         .packs-page {
           background: #faf7f2;

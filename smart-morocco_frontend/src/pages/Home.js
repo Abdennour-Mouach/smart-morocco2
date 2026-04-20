@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import About from "./About";
-import Contact from "./Contact" ;
 import Footer from "./Footer";
 import { 
   ChevronRight, 
@@ -10,106 +8,22 @@ import {
   Star, 
   Users, 
   Calendar,
-  Mountain,
-  Palette,
-  Coffee,
-  Camera,
   Heart,
   Compass,
   Award,
   TrendingUp
 } from "lucide-react";
 import PackCard from "../components/PackCard";
+import api from "../services/api";
 
 const Home = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDestination, setSelectedDestination] = useState("");
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [featuredPacks, setFeaturedPacks] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [hebergements, setHebergements] = useState([]);
   const videoRef = useRef(null);
-
-  // Données pour les destinations populaires
-  const popularDestinations = [
-    {
-      id: 1,
-      name: "Marrakech",
-      region: "Tensift - Al Haouz",
-      image: "https://images.unsplash.com/photo-1597218855407-debcc2f8e64a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      rating: 4.9,
-      reviews: 1250,
-      price: 299,
-      badge: "Ville Rouge"
-    },
-    {
-      id: 2,
-      name: "Fès",
-      region: "Fès - Meknès",
-      image: "https://images.unsplash.com/photo-1566368278-6a7db8bca6e4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      rating: 4.8,
-      reviews: 980,
-      price: 279,
-      badge: "Médina Millénaire"
-    },
-    {
-      id: 3,
-      name: "Chefchaouen",
-      region: "Tanger - Tétouan",
-      image: "https://images.unsplash.com/photo-1588357719276-35b76b1f3a7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      rating: 5.0,
-      reviews: 1500,
-      price: 249,
-      badge: "Ville Bleue"
-    },
-    {
-      id: 4,
-      name: "Sahara",
-      region: "Merzouga - Zagora",
-      image: "https://images.unsplash.com/photo-1546460573-f61e5e469f4d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      rating: 5.0,
-      reviews: 2100,
-      price: 399,
-      badge: "Dunes d'Or"
-    }
-  ];
-
-  // Données pour les expériences
-  const experiences = [
-    {
-      id: 1,
-      title: "Cours de Cuisine Marocaine",
-      location: "Marrakech",
-      image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      duration: "4 heures",
-      price: 89,
-      icon: <Coffee size={24} />
-    },
-    {
-      id: 2,
-      title: "Nuit sous les Tentes Berbères",
-      location: "Désert d'Agafay",
-      image: "https://images.unsplash.com/photo-1547234935-80c7145ec969?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      duration: "2 jours",
-      price: 299,
-      icon: <Mountain size={24} />
-    },
-    {
-      id: 3,
-      title: "Atelier de Zellige",
-      location: "Fès",
-      image: "https://images.unsplash.com/photo-1565098735462-5db3412ac4cb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      duration: "3 heures",
-      price: 65,
-      icon: <Palette size={24} />
-    },
-    {
-      id: 4,
-      title: "Safari Photo dans le Sahara",
-      location: "Merzouga",
-      image: "https://images.unsplash.com/photo-1454391304352-2bf4678b1a7a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      duration: "1 journée",
-      price: 159,
-      icon: <Camera size={24} />
-    }
-  ];
 
   // Témoignages
   const testimonials = [
@@ -177,6 +91,72 @@ const Home = () => {
       });
     }
   }, []);
+
+  useEffect(() => {
+    const fetchFeaturedPacks = async () => {
+      try {
+        const res = await api.get("/api/packs");
+        setFeaturedPacks(Array.isArray(res.data) ? res.data.slice(0, 3) : []);
+      } catch (err) {
+        console.error("Erreur lors du chargement des packs:", err);
+        setFeaturedPacks([]);
+      }
+    };
+
+    fetchFeaturedPacks();
+  }, []);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const res = await api.get("/api/activites");
+        setActivities(Array.isArray(res.data) ? res.data.slice(0, 4) : []);
+      } catch (err) {
+        console.error("Erreur lors du chargement des activites:", err);
+        setActivities([]);
+      }
+    };
+
+    fetchActivities();
+  }, []);
+
+  useEffect(() => {
+    const fetchHebergements = async () => {
+      try {
+        const res = await api.get("/api/hebergements");
+        setHebergements(Array.isArray(res.data) ? res.data.slice(0, 4) : []);
+      } catch (err) {
+        console.error("Erreur lors du chargement des hebergements:", err);
+        setHebergements([]);
+      }
+    };
+
+    fetchHebergements();
+  }, []);
+
+  const toImageUrl = (url) => {
+    if (!url) return "/images/AitHaddou.jpg";
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    if (url.startsWith("/uploads/")) return `http://localhost:5006${url}`;
+    return url;
+  };
+
+  const formatPrice = (price) =>
+    new Intl.NumberFormat("fr-FR", {
+      style: "currency",
+      currency: "MAD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(Number(price) || 0);
+
+  const renderStars = (etoiles) =>
+    [...Array(5)].map((_, index) => (
+      <Star
+        key={index}
+        size={14}
+        fill={index < Number(etoiles || 0) ? "currentColor" : "none"}
+      />
+    ));
 
   return (
     <div className="home">
@@ -273,14 +253,13 @@ const Home = () => {
           </div>
         </div>
       </section>
-      <About />
-      {/* Destinations Populaires */}
+      {/* Hebergements Populaires */}
       <section className="destinations-section">
         <div className="container">
           <div className="section-header">
             <div>
-              <span className="section-subtitle">Explorez</span>
-              <h2 className="section-title">Destinations <span className="title-accent">Populaires</span></h2>
+              <span className="section-subtitle">Sejournez</span>
+              <h2 className="section-title">Hebergements <span className="title-accent"></span></h2>
             </div>
             <Link to="/packs" className="view-all-link">
               Voir tout
@@ -289,38 +268,40 @@ const Home = () => {
           </div>
 
           <div className="destinations-grid">
-            {popularDestinations.map((dest) => (
-              <div key={dest.id} className="destination-card">
+            {hebergements.length > 0 ? hebergements.map((hebergement) => (
+              <div key={hebergement.id} className="destination-card">
                 <div className="destination-image">
-                  <img src={dest.image} alt={dest.name} />
-                  <span className="destination-badge">{dest.badge}</span>
+                  <img src={toImageUrl(hebergement.imageUrl)} alt={hebergement.nomHibergement || "Hebergement"} />
+                  <span className="destination-badge">{hebergement.type || "Hebergement"}</span>
                   <button className="favorite-btn">
                     <Heart size={18} />
                   </button>
                 </div>
                 <div className="destination-content">
-                  <h3 className="destination-name">{dest.name}</h3>
+                  <h3 className="destination-name">{hebergement.nomHibergement || "Hebergement"}</h3>
                   <p className="destination-region">
                     <MapPin size={14} />
-                    {dest.region}
+                    {hebergement.adresse || "Adresse non specifiee"}
                   </p>
                   <div className="destination-rating">
-                    <Star size={14} fill="currentColor" />
-                    <span className="rating-score">{dest.rating}</span>
-                    <span className="rating-count">({dest.reviews} avis)</span>
+                    {renderStars(hebergement.etoiles)}
+                    <span className="rating-score">{Number(hebergement.etoiles || 0)}</span>
+                    <span className="rating-count">etoiles</span>
                   </div>
                   <div className="destination-footer">
                     <div className="destination-price">
-                      <span className="price-from">À partir de</span>
-                      <span className="price-value">{dest.price}€</span>
+                      <span className="price-from">A partir de</span>
+                      <span className="price-value">{formatPrice(hebergement.prixParNuit)}</span>
                     </div>
-                    <Link to={`/destination/${dest.id}`} className="destination-link">
-                      Découvrir
+                    <Link to="/packs" className="destination-link">
+                      Decouvrir
                     </Link>
                   </div>
                 </div>
               </div>
-            ))}
+            )) : (
+              <p className="muted">Aucun hebergement disponible pour le moment.</p>
+            )}
           </div>
         </div>
       </section>
@@ -336,31 +317,31 @@ const Home = () => {
           </div>
 
           <div className="experiences-grid">
-            {experiences.map((exp) => (
-              <div key={exp.id} className="experience-card">
+            {activities.length > 0 ? activities.map((activity) => (
+              <div key={activity.id} className="experience-card">
                 <div className="experience-image">
-                  <img src={exp.image} alt={exp.title} />
-                  <div className="experience-icon">{exp.icon}</div>
+                  <img src={toImageUrl(activity.imageUrl)} alt={activity.nomActivity || "Activite"} />
                 </div>
                 <div className="experience-content">
-                  <h3 className="experience-title">{exp.title}</h3>
+                  <h3 className="experience-title">{activity.nomActivity || "Activite"}</h3>
                   <p className="experience-location">
                     <MapPin size={14} />
-                    {exp.location}
+                    {activity.lieu || "Lieu a definir"}
                   </p>
                   <div className="experience-footer">
                     <div className="experience-duration">
                       <Calendar size={14} />
-                      {exp.duration}
+                      {activity.duree || "Duree a definir"}
                     </div>
                     <div className="experience-price">
-                      <span className="price-value">{exp.price}€</span>
-                      <span className="price-unit">/pers</span>
+                      <span className="price-value">{formatPrice(activity.prix)}</span>
                     </div>
                   </div>
                 </div>
               </div>
-            ))}
+            )) : (
+              <p className="muted">Aucune activite disponible pour le moment.</p>
+            )}
           </div>
         </div>
       </section>
@@ -391,9 +372,13 @@ const Home = () => {
           </div>
 
           <div className="packs-grid">
-            <PackCard />
-            <PackCard />
-            <PackCard />
+            {featuredPacks.length > 0 ? (
+              featuredPacks.map((pack) => (
+                <PackCard key={pack.id} pack={pack} />
+              ))
+            ) : (
+              <p className="muted">Aucun pack disponible pour le moment.</p>
+            )}
           </div>
         </div>
       </section>
@@ -402,7 +387,6 @@ const Home = () => {
       <section className="testimonials-section">
         <div className="container">
           <div className="section-header centered">
-            <span className="section-subtitle">Ils ont voyagé avec nous</span>
             <h2 className="section-title">Avis <span className="title-accent">Voyageurs</span></h2>
           </div>
 
@@ -432,7 +416,6 @@ const Home = () => {
           </div>
         </div>
       </section>
-      <Contact />
 
       {/* Call to Action */}
       <section className="cta-section">
@@ -950,6 +933,14 @@ const Home = () => {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
           gap: 20px;
+        }
+
+        .muted {
+          grid-column: 1 / -1;
+          text-align: center;
+          color: #666;
+          font-size: 1rem;
+          padding: 24px 0;
         }
 
         .experience-card {

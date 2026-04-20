@@ -7,25 +7,39 @@ import Reservation from "./pages/Reservation";
 import Register from "./pages/register";
 import Login from "./pages/Login";
 import About from "./pages/About";
-import Contact  from "./pages/Contact";
+import Contact from "./pages/Contact";
 import PackDetails from "./pages/PackDetails";
 import Profile from "./pages/Profile";
 import AdminDashboard from "./admin/AdminDashboard"; 
-import ManagePacks from "./admin/ManagePacks";
-import ManageUsers from "./admin/ManageUsers";
-import ManageReservations from "./admin/ManageReservations";
 import Footer from "./pages/Footer";
+import ChatbotWidget from "./components/ChatbotWidget";
 
 function Layout() {
   const location = useLocation();
 
   // routes sans navbar
-  const hideNavbar = ["/login", "/register"].includes(location.pathname);
+  const hideNavbarRoutes = [
+    "/login", 
+    "/register",
+    "/admin",
+    "/admin/packs",
+    "/admin/users",
+    "/admin/restaurants",
+    "/admin/transports",
+    "/admin/activites",
+    "/admin/hebergements",
+    "/admin/contactAdmin",
+    "/admin/reservations",
+    "/admin/reviews"
+  ];
+  
+  const hideNavbar = hideNavbarRoutes.some(route => 
+    location.pathname === route || location.pathname.startsWith(route + "/")
+  );
 
   return (
     <>
       {!hideNavbar && <Navbar />}
-
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/packs" element={<Packs />} />
@@ -34,14 +48,15 @@ function Layout() {
         <Route path="/register" element={<Register />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
-        <Route path="/PackDetails" element={<PackDetails />} />
-        <Route path="/Profile" element={<Profile />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/packs" element={<ManagePacks />} />
-        <Route path="/admin/users" element={<ManageUsers />} />
-        <Route path="/admin/reservations" element={<ManageReservations />} />
+        <Route path="/packs/:id" element={<PackDetails />} />
+        <Route path="/profile" element={<Profile />} />
+        
+        {/* Routes Admin - tout est géré dans AdminDashboard */}
+        <Route path="/admin/*" element={<AdminDashboard />} />
+        
         <Route path="/footer" element={<Footer />} />
       </Routes>
+      <ChatbotWidget />
     </>
   );
 }

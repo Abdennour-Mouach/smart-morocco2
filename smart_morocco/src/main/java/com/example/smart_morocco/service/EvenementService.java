@@ -1,10 +1,9 @@
 package com.example.smart_morocco.service;
 
-import com.example.smart_morocco.model.Evenement;
+import com.example.smart_morocco.model.Activite;
 import com.example.smart_morocco.repository.EvenementRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,30 +16,23 @@ public class EvenementService {
         this.evenementRepository = evenementRepository;
     }
 
-    public List<Evenement> getAllEvenements() {
+    public List<Activite> getAllEvenements() {
         return evenementRepository.findAll();
     }
 
-    public Optional<Evenement> getEvenementById(Integer id) {
+    public Optional<Activite> getEvenementById(Long id) {
         return evenementRepository.findById(id);
     }
 
-    public List<Evenement> getEvenementsByLieu(String lieu) {
+    public List<Activite> getEvenementsByLieu(String lieu) {
         return evenementRepository.findByLieu(lieu);
     }
 
-    public List<Evenement> getEvenementsByDate(LocalDate date) {
-        return evenementRepository.findByDate(date);
-    }
-
-   public List<Evenement> getEvenementsByPackId(Integer idPack) {
-    return evenementRepository.findByPack_Id(idPack);
-}
-    public Evenement saveEvenement(Evenement evenement) {
+    public Activite saveEvenement(Activite evenement) {
         return evenementRepository.save(evenement);
     }
 
-    public void deleteEvenement(Integer id) {
+    public void deleteEvenement(Long id) {
         evenementRepository.deleteById(id);
     }
 }

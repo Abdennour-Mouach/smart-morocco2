@@ -23,13 +23,13 @@ public class Utilisateur {
 
     private String role;
 
-    @OneToMany(mappedBy = "utilisateur")
+    /*@OneToMany(mappedBy = "utilisateur")
     @JsonIgnore
     private List<Reservation> reservations;
 
     @OneToMany(mappedBy = "utilisateur")
     @JsonIgnore
-    private List<Review> reviews;
+    private List<Review> reviews;*/
 
     // Getters & Setters
     public Integer getId_utilisateur() { return id; }
@@ -52,9 +52,9 @@ public class Utilisateur {
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
 
-    public List<Reservation> getReservations() { return reservations; }
+    /*public List<Reservation> getReservations() { return reservations; }
     public void setReservations(List<Reservation> reservations) { this.reservations = reservations; }
 
     public List<Review> getReviews() { return reviews; }
-    public void setReviews(List<Review> reviews) { this.reviews = reviews; }
+    public void setReviews(List<Review> reviews) { this.reviews = reviews; }*/
 }
