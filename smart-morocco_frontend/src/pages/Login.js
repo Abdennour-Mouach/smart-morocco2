@@ -241,7 +241,7 @@ const Login = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .login-page {
           display: flex;
           min-height: 100vh;

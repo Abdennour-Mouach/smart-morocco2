@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 import { Plus, Trash2, X, Search, Package, MapPin, Calendar, Upload, Check } from "lucide-react";
 
@@ -314,28 +314,49 @@ const Pack = () => {
 
   const detectedCity = resolveCity(form.destination || form.nomPack);
 
-  const filteredHebergements = detectedCity
-    ? hebergements.filter((item) => matchesCity(item.lieu || item.adresse || item.nomHibergement || "", detectedCity))
-    : hebergements;
+  const filteredHebergements = useMemo(
+    () =>
+      detectedCity
+        ? hebergements.filter((item) => matchesCity(item.lieu || item.adresse || item.nomHibergement || "", detectedCity))
+        : hebergements,
+    [detectedCity, hebergements]
+  );
 
-  const filteredRestaurations = detectedCity
-    ? restaurations.filter((item) =>
-        matchesCity(
-          [item.nomRestauration, item.typeCuisine, item.description, item.lieu].filter(Boolean).join(" "),
-          detectedCity
-        )
-      )
-    : restaurations;
+  const filteredRestaurations = useMemo(
+    () =>
+      detectedCity
+        ? restaurations.filter((item) =>
+            matchesCity(
+              [item.nomRestauration, item.typeCuisine, item.description, item.lieu].filter(Boolean).join(" "),
+              detectedCity
+            )
+          )
+        : restaurations,
+    [detectedCity, restaurations]
+  );
 
-  const filteredActivites = detectedCity
-    ? activites.filter((item) =>
-        matchesCity([item.nomActivity, item.lieu, item.description].filter(Boolean).join(" "), detectedCity)
-      )
-    : activites;
+  const filteredActivites = useMemo(
+    () =>
+      detectedCity
+        ? activites.filter((item) =>
+            matchesCity([item.nomActivity, item.lieu, item.description].filter(Boolean).join(" "), detectedCity)
+          )
+        : activites,
+    [activites, detectedCity]
+  );
 
-  const visibleHebergements = detectedCity ? filteredHebergements : [];
-  const visibleRestaurations = detectedCity ? filteredRestaurations : [];
-  const visibleActivites = detectedCity ? filteredActivites : [];
+  const visibleHebergements = useMemo(
+    () => (detectedCity ? filteredHebergements : []),
+    [detectedCity, filteredHebergements]
+  );
+  const visibleRestaurations = useMemo(
+    () => (detectedCity ? filteredRestaurations : []),
+    [detectedCity, filteredRestaurations]
+  );
+  const visibleActivites = useMemo(
+    () => (detectedCity ? filteredActivites : []),
+    [detectedCity, filteredActivites]
+  );
   const firstHebergementId = visibleHebergements[0]?.id ? String(visibleHebergements[0].id) : "";
   const firstRestaurationId = visibleRestaurations[0]?.id ? String(visibleRestaurations[0].id) : "";
   const firstActiviteId = visibleActivites[0]?.id ? String(visibleActivites[0].id) : "";
@@ -754,7 +775,7 @@ const Pack = () => {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         /* ----- STYLE ÉLÉGANT POUR L'AJOUT DE PACK ----- */
         .pack-crud {
           padding: 24px;

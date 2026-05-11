@@ -4,7 +4,6 @@ import { FaInstagram, FaFacebookF, FaLinkedinIn, FaWhatsapp } from "react-icons/
 const Footer = () => {
   const deepBlue = "#0E2576";
   const deepOchre = "#CE7B15";
-  const softWhite = "#FDF9F4";
 
   return (
     <footer className="smart-footer">
@@ -47,10 +46,10 @@ const Footer = () => {
         <div className="footer-section">
           <h4 className="section-title1">Suivez-nous</h4>
           <div className="social-icons-grid">
-            <a href="#" aria-label="Instagram" className="icon-wrapper"><FaInstagram /></a>
-            <a href="#" aria-label="Facebook" className="icon-wrapper"><FaFacebookF /></a>
-            <a href="#" aria-label="LinkedIn" className="icon-wrapper"><FaLinkedinIn /></a>
-            <a href="#" aria-label="WhatsApp" className="icon-wrapper"><FaWhatsapp /></a>
+            <a href="https://www.instagram.com/" aria-label="Instagram" className="icon-wrapper" target="_blank" rel="noreferrer"><FaInstagram /></a>
+            <a href="https://www.facebook.com/" aria-label="Facebook" className="icon-wrapper" target="_blank" rel="noreferrer"><FaFacebookF /></a>
+            <a href="https://www.linkedin.com/" aria-label="LinkedIn" className="icon-wrapper" target="_blank" rel="noreferrer"><FaLinkedinIn /></a>
+            <a href="https://wa.me/212698653210" aria-label="WhatsApp" className="icon-wrapper" target="_blank" rel="noreferrer"><FaWhatsapp /></a>
           </div>
         </div>
       </div>
@@ -58,15 +57,15 @@ const Footer = () => {
       <div className="footer-bottom">
         <div className="bottom-content">
           <div className="legal-links">
-            <a href="#">Confidentialité</a>
-            <a href="#">Cookies</a>
-            <a href="#">Mentions Légales</a>
+            <a href="/privacy">Confidentialité</a>
+            <a href="/cookies">Cookies</a>
+            <a href="/legal">Mentions Légales</a>
           </div>
           <p className="copyright">© 2026 SMART MOROCCO — LUXURY TRAVEL DESIGN.</p>
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .smart-footer {
           background: linear-gradient(145deg, #fefaf5 0%, #fff6ed 100%);
           padding: 100px 0 50px 0;

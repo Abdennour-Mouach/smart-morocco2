@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { 
+import {
   User,
   Mail,
   Lock,
   Phone,
-  MapPin,
   Calendar,
   Edit,
   Save,
@@ -23,11 +22,17 @@ import {
   Bell,
   Globe,
   Moon,
-  Sun
+  Sun,
+  Heart,
+  Trash2,
+  MapPin
 } from "lucide-react";
 import api from "../services/api";
+import { useLanguage } from "../i18n/LanguageContext";
+import { readFavoritePacks, removeFavoritePack } from "../utils/favorites";
 
 const Profile = () => {
+  const { language, languages, setLanguage, t } = useLanguage();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -35,6 +40,7 @@ const Profile = () => {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [favoritePacks, setFavoritePacks] = useState([]);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -61,6 +67,12 @@ const Profile = () => {
   useEffect(() => {
     loadUserProfile();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      setFavoritePacks(readFavoritePacks(user));
+    }
+  }, [user]);
 
   const loadUserProfile = async () => {
     const userData = localStorage.getItem("user");
@@ -168,6 +180,10 @@ const Profile = () => {
     window.location.href = "/";
   };
 
+  const handleRemoveFavorite = (packId) => {
+    setFavoritePacks((currentFavorites) => removeFavoritePack(user, currentFavorites, packId));
+  };
+
   const handleChangePassword = async () => {
     if (!passwordForm.currentPassword || !passwordForm.newPassword) {
       setMessage("Veuillez remplir tous les champs du mot de passe");
@@ -201,7 +217,7 @@ const Profile = () => {
       <div className="loading-container">
         <div className="loading-spinner"></div>
         <p>Chargement de votre profil...</p>
-        <style jsx>{`
+        <style>{`
           .loading-container {
             min-height: 100vh;
             display: flex;
@@ -240,7 +256,7 @@ const Profile = () => {
             <ChevronRight size={18} />
           </Link>
         </div>
-        <style jsx>{`
+        <style>{`
           .login-prompt {
             min-height: 100vh;
             display: flex;
@@ -352,6 +368,15 @@ const Profile = () => {
           </div>
           <div className="stat-card">
             <div className="stat-icon">
+              <Heart size={24} />
+            </div>
+            <div className="stat-info">
+              <span className="stat-value">{favoritePacks.length}</span>
+              <span className="stat-label">Favoris</span>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">
               <Calendar size={24} />
             </div>
             <div className="stat-info">
@@ -400,6 +425,13 @@ const Profile = () => {
           >
             <Shield size={18} />
             Sécurité
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'favorites' ? 'active' : ''}`}
+            onClick={() => setActiveTab('favorites')}
+          >
+            <Heart size={18} />
+            Favoris
           </button>
           <button 
             className={`tab-btn ${activeTab === 'preferences' ? 'active' : ''}`}
@@ -656,6 +688,66 @@ const Profile = () => {
             </div>
           )}
 
+          {activeTab === 'favorites' && (
+            <div className="favorites-card">
+              <div className="card-header">
+                <div className="header-title">
+                  <Heart size={20} />
+                  <h2>Mes packs favoris</h2>
+                </div>
+              </div>
+
+              {favoritePacks.length > 0 ? (
+                <div className="profile-favorites-grid">
+                  {favoritePacks.map((pack) => (
+                    <article key={pack.id} className="profile-favorite-card">
+                      <img src={pack.imageUrl || "/images/ESSAOUIRA.jpg"} alt={pack.nomPack || "Pack favori"} />
+                      <div className="profile-favorite-body">
+                        <div>
+                          <h3>{pack.nomPack || "Pack voyage"}</h3>
+                          <p>
+                            <MapPin size={14} />
+                            {pack.destination || "Maroc"}
+                          </p>
+                        </div>
+                        <div className="profile-favorite-meta">
+                          <span>{pack.duree || "-"} jours</span>
+                          <strong>{pack.prixTotal || 0} MAD</strong>
+                        </div>
+                        <div className="profile-favorite-actions">
+                          <button
+                            type="button"
+                            className="open-pack-btn"
+                            onClick={() => (window.location.href = `/packs/${pack.id}`)}
+                          >
+                            Voir le pack
+                          </button>
+                          <button
+                            type="button"
+                            className="remove-profile-favorite-btn"
+                            onClick={() => handleRemoveFavorite(pack.id)}
+                            aria-label={`Retirer ${pack.nomPack || "ce pack"} des favoris`}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="profile-favorites-empty">
+                  <Heart size={36} />
+                  <h3>Aucun pack favori</h3>
+                  <p>Ajoutez des packs depuis la page Packs en cliquant sur le coeur.</p>
+                  <Link to="/packs" className="open-pack-btn">
+                    Explorer les packs
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'preferences' && (
             <div className="preferences-card">
               <div className="card-header">
@@ -712,19 +804,27 @@ const Profile = () => {
               </div>
 
               <div className="preferences-section">
-                <h3>Langue et région</h3>
+                <h3>{t.preferences.languageRegion}</h3>
                 
                 <div className="preference-item">
                   <div className="preference-info">
                     <Globe size={16} />
                     <div>
-                      <p>Langue</p>
+                      <p>{t.preferences.language}</p>
+                      <span>{t.preferences.languageHint}</span>
                     </div>
                   </div>
-                  <select className="preference-select">
-                    <option>Français</option>
-                    <option>English</option>
-                    <option>العربية</option>
+                  <select
+                    className="preference-select"
+                    value={language}
+                    onChange={(event) => setLanguage(event.target.value)}
+                    aria-label={t.language.choose}
+                  >
+                    {languages.map((item) => (
+                      <option key={item.code} value={item.code} lang={item.locale} dir={item.dir}>
+                        {item.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -763,7 +863,7 @@ const Profile = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .profile-page {
           background: #faf7f2;
           min-height: 100vh;
@@ -858,7 +958,7 @@ const Profile = () => {
         /* Stats Grid */
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
           gap: 20px;
           margin-bottom: 30px;
         }
@@ -978,7 +1078,8 @@ const Profile = () => {
         /* Profile Card */
         .profile-card,
         .security-card,
-        .preferences-card {
+        .preferences-card,
+        .favorites-card {
           background: white;
           border-radius: 20px;
           padding: 30px;
@@ -1004,6 +1105,118 @@ const Profile = () => {
           margin: 0;
           font-size: 1.3rem;
           color: #1e272e;
+        }
+
+        .profile-favorites-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          gap: 18px;
+        }
+
+        .profile-favorite-card {
+          border: 1px solid #eef1f3;
+          border-radius: 16px;
+          overflow: hidden;
+          background: #fff;
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+        }
+
+        .profile-favorite-card img {
+          width: 100%;
+          height: 150px;
+          object-fit: cover;
+        }
+
+        .profile-favorite-body {
+          padding: 16px;
+        }
+
+        .profile-favorite-body h3 {
+          margin: 0 0 8px;
+          color: #1e272e;
+          font-size: 1.05rem;
+        }
+
+        .profile-favorite-body p {
+          margin: 0;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          color: #666;
+        }
+
+        .profile-favorite-meta {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          margin: 16px 0;
+          color: #666;
+        }
+
+        .profile-favorite-meta strong {
+          color: #bf5700;
+        }
+
+        .profile-favorite-actions {
+          display: flex;
+          gap: 10px;
+        }
+
+        .open-pack-btn {
+          flex: 1;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 40px;
+          padding: 9px 14px;
+          border: none;
+          border-radius: 10px;
+          background: linear-gradient(135deg, #0f4c75, #bf5700);
+          color: white;
+          text-decoration: none;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .remove-profile-favorite-btn {
+          width: 42px;
+          height: 40px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: none;
+          border-radius: 10px;
+          background: #fff3f3;
+          color: #dc3545;
+          cursor: pointer;
+        }
+
+        .profile-favorites-empty {
+          min-height: 260px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          text-align: center;
+          color: #666;
+          border: 1px dashed rgba(15, 76, 117, 0.25);
+          border-radius: 16px;
+          background: #f8fafb;
+        }
+
+        .profile-favorites-empty h3 {
+          margin: 0;
+          color: #1e272e;
+        }
+
+        .profile-favorites-empty p {
+          margin: 0;
+        }
+
+        .profile-favorites-empty .open-pack-btn {
+          flex: 0 0 auto;
+          min-width: 180px;
         }
 
         .edit-btn {
@@ -1358,6 +1571,7 @@ const Profile = () => {
         }
 
         .preference-select {
+          min-width: 160px;
           padding: 8px 12px;
           border: 2px solid #eaeaea;
           border-radius: 8px;

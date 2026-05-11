@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
 import Footer from "./Footer";
 
 import { 
@@ -15,10 +14,52 @@ import {
   ArrowUpDown,
   Grid3x3,
   LayoutList,
-  Compass
+  Compass,
+  MessageCircle,
+  Quote,
+  Send,
+  Heart,
+  Trash2
 } from "lucide-react";
 import api from "../services/api";
 import PackCard from "../components/PackCard";
+import {
+  readFavoritePacks,
+  removeFavoritePack,
+  toggleFavoritePack
+} from "../utils/favorites";
+
+const LOCAL_PACK_REVIEWS_KEY = "smartMoroccoPackReviews";
+
+const featuredPackReviews = [
+  {
+    id: "featured-1",
+    author: "Sara El Amrani",
+    packName: "Circuit Marrakech & Atlas",
+    destination: "Marrakech",
+    rating: 5,
+    comment: "Un voyage tres bien organise, avec un guide attentif et des etapes parfaitement rythmees.",
+    date: "2026-04-18"
+  },
+  {
+    id: "featured-2",
+    author: "Youssef Benali",
+    packName: "Escapade Essaouira",
+    destination: "Essaouira",
+    rating: 4,
+    comment: "Belle selection d'activites et hebergement confortable. Le coucher de soleil etait superbe.",
+    date: "2026-03-26"
+  },
+  {
+    id: "featured-3",
+    author: "Mina Rodriguez",
+    packName: "Imperial Fes",
+    destination: "Fes",
+    rating: 5,
+    comment: "Experience authentique, equipe reactive et tres bons conseils pour profiter de la medina.",
+    date: "2026-02-11"
+  }
+];
 
 const Packs = () => {
   const [packs, setPacks] = useState([]);
@@ -33,6 +74,16 @@ const Packs = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [destinations, setDestinations] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [user, setUser] = useState(null);
+  const [favoritePacks, setFavoritePacks] = useState([]);
+  const [localPackReviews, setLocalPackReviews] = useState([]);
+  const [reviewMessage, setReviewMessage] = useState("");
+  const [reviewForm, setReviewForm] = useState({
+    author: "",
+    packId: "general",
+    rating: 5,
+    comment: ""
+  });
   const [stats, setStats] = useState({
     total: 0,
     minPrice: 0,
@@ -57,8 +108,79 @@ const Packs = () => {
   }, [backgroundImages.length]);
 
   useEffect(() => {
+    try {
+      const savedReviews = JSON.parse(localStorage.getItem(LOCAL_PACK_REVIEWS_KEY) || "[]");
+      setLocalPackReviews(Array.isArray(savedReviews) ? savedReviews : []);
+    } catch {
+      setLocalPackReviews([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+      setUser(storedUser);
+      setFavoritePacks(readFavoritePacks(storedUser));
+    } catch {
+      setUser(null);
+      setFavoritePacks(readFavoritePacks(null));
+    }
+  }, []);
+
+  useEffect(() => {
     fetchPacks();
   }, []);
+
+  const packReviews = useMemo(
+    () => [...localPackReviews, ...featuredPackReviews],
+    [localPackReviews]
+  );
+
+  const reviewStats = useMemo(() => {
+    const total = packReviews.length;
+    const sum = packReviews.reduce((acc, review) => acc + (Number(review.rating) || 0), 0);
+
+    return {
+      total,
+      average: total > 0 ? sum / total : 0,
+      satisfied: total > 0
+        ? Math.round((packReviews.filter((review) => Number(review.rating) >= 4).length / total) * 100)
+        : 0
+    };
+  }, [packReviews]);
+
+  const reviewsByPack = useMemo(() => {
+    const groupedReviews = new Map();
+
+    packReviews.forEach((review) => {
+      if (!review.packId || review.packId === "general") {
+        return;
+      }
+
+      const key = String(review.packId);
+      const current = groupedReviews.get(key) || { count: 0, totalRating: 0 };
+      groupedReviews.set(key, {
+        count: current.count + 1,
+        totalRating: current.totalRating + (Number(review.rating) || 0)
+      });
+    });
+
+    return groupedReviews;
+  }, [packReviews]);
+
+  const favoritePackIds = useMemo(
+    () => new Set(favoritePacks.map((favorite) => String(favorite.id))),
+    [favoritePacks]
+  );
+
+  const favoriteList = useMemo(
+    () =>
+      favoritePacks.map((favorite) => {
+        const latestPack = packs.find((pack) => String(pack.id) === String(favorite.id));
+        return latestPack ? { ...favorite, ...latestPack } : favorite;
+      }),
+    [favoritePacks, packs]
+  );
 
   const fetchPacks = async () => {
     setIsLoading(true);
@@ -166,6 +288,90 @@ const Packs = () => {
     setSortBy("popularite");
   };
 
+  const handleToggleFavorite = (pack) => {
+    setFavoritePacks((currentFavorites) => toggleFavoritePack(user, currentFavorites, pack));
+  };
+
+  const handleRemoveFavorite = (event, packId) => {
+    event.stopPropagation();
+    setFavoritePacks((currentFavorites) => removeFavoritePack(user, currentFavorites, packId));
+  };
+
+  const getPackReviewSummary = (pack) => {
+    const summary = reviewsByPack.get(String(pack.id));
+
+    if (!summary) {
+      return null;
+    }
+
+    return {
+      noteMoyenne: Number((summary.totalRating / summary.count).toFixed(1)),
+      nombreAvis: summary.count
+    };
+  };
+
+  const getSelectedPack = () =>
+    packs.find((pack) => String(pack.id) === String(reviewForm.packId));
+
+  const handleReviewSubmit = (event) => {
+    event.preventDefault();
+
+    if (!reviewForm.author.trim() || !reviewForm.comment.trim()) {
+      setReviewMessage("Ajoutez votre nom et un commentaire pour publier votre avis.");
+      return;
+    }
+
+    const selectedPack = getSelectedPack();
+    const newReview = {
+      id: `local-${Date.now()}`,
+      author: reviewForm.author.trim(),
+      packId: reviewForm.packId,
+      packName: selectedPack?.nomPack || "Experience generale",
+      destination: selectedPack?.destination || "Maroc",
+      rating: Number(reviewForm.rating),
+      comment: reviewForm.comment.trim(),
+      date: new Date().toISOString()
+    };
+
+    setLocalPackReviews((currentReviews) => {
+      const nextReviews = [newReview, ...currentReviews];
+      try {
+        localStorage.setItem(LOCAL_PACK_REVIEWS_KEY, JSON.stringify(nextReviews));
+      } catch {
+        // Keep the review visible in the current session even if storage is blocked.
+      }
+      return nextReviews;
+    });
+
+    setReviewForm({
+      author: "",
+      packId: "general",
+      rating: 5,
+      comment: ""
+    });
+    setReviewMessage("Merci, votre avis a ete ajoute a la section.");
+  };
+
+  const renderStars = (rating, size = 16) => (
+    <span className="review-stars" aria-label={`${rating} sur 5`}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          size={size}
+          fill={star <= rating ? "currentColor" : "none"}
+          className={star <= rating ? "star-filled" : "star-empty"}
+        />
+      ))}
+    </span>
+  );
+
+  const formatReviewDate = (dateString) =>
+    new Date(dateString).toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "short",
+      year: "numeric"
+    });
+
   if (isLoading) {
     return (
       <div className="loading-container">
@@ -174,7 +380,7 @@ const Packs = () => {
         <div className="loading-progress">
           <div className="progress-bar"></div>
         </div>
-        <style jsx>{`
+        <style>{`
           .loading-container {
             min-height: 100vh;
             display: flex;
@@ -322,6 +528,15 @@ const Packs = () => {
               <span className="stat-value">10K+</span>
             </div>
           </div>
+          <div className="stat-card">
+            <div className="stat-icon">
+              <Heart size={24} />
+            </div>
+            <div className="stat-info">
+              <span className="stat-label">Mes favoris</span>
+              <span className="stat-value">{favoritePacks.length}</span>
+            </div>
+          </div>
         </div>
 
         {/* Barre d'outils */}
@@ -374,6 +589,57 @@ const Packs = () => {
             </div>
           </div>
         </div>
+
+        <section className="favorites-section" aria-labelledby="favorites-title">
+          <div className="favorites-header">
+            <div>
+              <span className="section-kicker compact">
+                <Heart size={18} />
+                Liste personnelle
+              </span>
+              <h2 id="favorites-title">Mes packs favoris</h2>
+            </div>
+            <span className="favorites-count">{favoritePacks.length} favori{favoritePacks.length > 1 ? "s" : ""}</span>
+          </div>
+
+          {favoriteList.length > 0 ? (
+            <div className="favorites-list">
+              {favoriteList.map((pack) => (
+                <article
+                  key={pack.id}
+                  className="favorite-item"
+                  onClick={() => (window.location.href = `/packs/${pack.id}`)}
+                >
+                  <img src={pack.imageUrl || "/images/ESSAOUIRA.jpg"} alt={pack.nomPack || "Pack favori"} />
+                  <div className="favorite-info">
+                    <h3>{pack.nomPack || "Pack voyage"}</h3>
+                    <span>
+                      <MapPin size={14} />
+                      {pack.destination || "Maroc"}
+                    </span>
+                  </div>
+                  <div className="favorite-meta">
+                    <strong>{pack.prixTotal || 0} MAD</strong>
+                    <span>{pack.duree || "-"} jours</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="remove-favorite-btn"
+                    onClick={(event) => handleRemoveFavorite(event, pack.id)}
+                    aria-label={`Retirer ${pack.nomPack || "ce pack"} des favoris`}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="favorites-empty">
+              <Heart size={22} />
+              <span>Cliquez sur le coeur d'un pack pour l'ajouter ici.</span>
+            </div>
+          )}
+        </section>
 
         <div className="content-wrapper">
           {/* Panneau de filtres */}
@@ -486,7 +752,15 @@ const Packs = () => {
             {filteredPacks.length > 0 ? (
               <div className={`packs-grid ${viewMode}`}>
                 {filteredPacks.map(pack => (
-                  <PackCard key={pack.id} pack={pack} />
+                  <PackCard
+                    key={pack.id}
+                    isFavorite={favoritePackIds.has(String(pack.id))}
+                    onToggleFavorite={handleToggleFavorite}
+                    pack={{
+                      ...pack,
+                      ...(getPackReviewSummary(pack) || {})
+                    }}
+                  />
                 ))}
               </div>
             ) : (
@@ -503,9 +777,132 @@ const Packs = () => {
             )}
           </main>
         </div>
+
+        <section className="pack-reviews-section" aria-labelledby="pack-reviews-title">
+          <div className="reviews-heading">
+            <div>
+              <span className="section-kicker">
+                <MessageCircle size={18} />
+                Avis voyageurs
+              </span>
+              <h2 id="pack-reviews-title">Ils ont teste nos packs touristiques</h2>
+              <p>
+                Consultez les retours des voyageurs et partagez votre experience apres votre sejour.
+              </p>
+            </div>
+            <div className="reviews-score-card">
+              <span className="score-value">{reviewStats.average.toFixed(1)}</span>
+              {renderStars(Math.round(reviewStats.average), 18)}
+              <span className="score-label">{reviewStats.total} avis publies</span>
+            </div>
+          </div>
+
+          <div className="reviews-insights">
+            <div className="insight-item">
+              <span className="insight-value">{reviewStats.satisfied}%</span>
+              <span className="insight-label">voyageurs satisfaits</span>
+            </div>
+            <div className="insight-item">
+              <span className="insight-value">{reviewStats.total}</span>
+              <span className="insight-label">experiences partagees</span>
+            </div>
+            <div className="insight-item">
+              <span className="insight-value">24h</span>
+              <span className="insight-label">temps moyen de reponse</span>
+            </div>
+          </div>
+
+          <div className="reviews-content">
+            <div className="reviews-list" aria-label="Derniers avis voyageurs">
+              {packReviews.slice(0, 4).map((review) => (
+                <article key={review.id} className="review-card">
+                  <Quote size={28} className="quote-icon" />
+                  <div className="review-card-header">
+                    <div>
+                      <h3>{review.author}</h3>
+                      <span>{review.packName}</span>
+                    </div>
+                    {renderStars(Number(review.rating) || 0)}
+                  </div>
+                  <p className="review-comment">{review.comment}</p>
+                  <div className="review-footer">
+                    <span>{review.destination}</span>
+                    <span>{formatReviewDate(review.date)}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <form className="review-form-card" onSubmit={handleReviewSubmit}>
+              <div className="form-header">
+                <h3>Ajouter un avis</h3>
+                <p>Votre retour aide les prochains voyageurs a choisir le bon pack.</p>
+              </div>
+
+              <label>
+                Nom
+                <input
+                  type="text"
+                  value={reviewForm.author}
+                  onChange={(event) => setReviewForm({ ...reviewForm, author: event.target.value })}
+                  placeholder="Votre nom"
+                />
+              </label>
+
+              <label>
+                Pack
+                <select
+                  value={reviewForm.packId}
+                  onChange={(event) => setReviewForm({ ...reviewForm, packId: event.target.value })}
+                >
+                  <option value="general">Experience generale</option>
+                  {packs.map((pack) => (
+                    <option key={pack.id} value={pack.id}>
+                      {pack.nomPack || pack.destination || `Pack #${pack.id}`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                Note
+                <div className="rating-picker">
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      type="button"
+                      className={Number(reviewForm.rating) >= rating ? "active" : ""}
+                      onClick={() => setReviewForm({ ...reviewForm, rating })}
+                      aria-label={`${rating} etoile${rating > 1 ? "s" : ""}`}
+                    >
+                      <Star size={20} fill="currentColor" />
+                    </button>
+                  ))}
+                </div>
+              </label>
+
+              <label>
+                Avis
+                <textarea
+                  value={reviewForm.comment}
+                  onChange={(event) => setReviewForm({ ...reviewForm, comment: event.target.value })}
+                  placeholder="Partagez ce qui vous a marque..."
+                  rows="4"
+                />
+              </label>
+
+              {reviewMessage && <p className="review-message">{reviewMessage}</p>}
+
+              <button type="submit" className="submit-review-btn">
+                <Send size={18} />
+                Publier l'avis
+              </button>
+            </form>
+          </div>
+        </section>
       </div>
       <Footer />
-      <style jsx>{`
+      <style>{`
         .packs-page {
           background: #faf7f2;
           min-height: 100vh;
@@ -675,7 +1072,7 @@ const Packs = () => {
         /* Quick Stats */
         .quick-stats {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
           gap: 20px;
           margin-bottom: 40px;
         }
@@ -732,6 +1129,138 @@ const Packs = () => {
           padding: 15px 20px;
           border-radius: 16px;
           box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .favorites-section {
+          background: white;
+          border: 1px solid rgba(15, 76, 117, 0.08);
+          border-radius: 18px;
+          padding: 22px;
+          margin-bottom: 30px;
+          box-shadow: 0 6px 22px rgba(0, 0, 0, 0.05);
+        }
+
+        .favorites-header {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 20px;
+          margin-bottom: 16px;
+        }
+
+        .favorites-header h2 {
+          margin: 6px 0 0;
+          color: #1e272e;
+          font-size: 1.35rem;
+        }
+
+        .section-kicker.compact {
+          margin-bottom: 0;
+          font-size: 0.9rem;
+        }
+
+        .favorites-count {
+          color: #0f4c75;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+
+        .favorites-list {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 14px;
+        }
+
+        .favorite-item {
+          min-height: 92px;
+          display: grid;
+          grid-template-columns: 76px minmax(0, 1fr) auto 38px;
+          align-items: center;
+          gap: 12px;
+          padding: 10px;
+          border: 1px solid #eef1f3;
+          border-radius: 14px;
+          cursor: pointer;
+          transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .favorite-item:hover {
+          border-color: rgba(15, 76, 117, 0.35);
+          transform: translateY(-2px);
+        }
+
+        .favorite-item img {
+          width: 76px;
+          height: 72px;
+          object-fit: cover;
+          border-radius: 10px;
+        }
+
+        .favorite-info {
+          min-width: 0;
+        }
+
+        .favorite-info h3 {
+          margin: 0 0 8px;
+          color: #1e272e;
+          font-size: 0.98rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .favorite-info span {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: #666;
+          font-size: 0.86rem;
+        }
+
+        .favorite-meta {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 4px;
+          color: #666;
+          font-size: 0.82rem;
+          white-space: nowrap;
+        }
+
+        .favorite-meta strong {
+          color: #bf5700;
+          font-size: 0.95rem;
+        }
+
+        .remove-favorite-btn {
+          width: 36px;
+          height: 36px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: none;
+          border-radius: 10px;
+          background: #fff3f3;
+          color: #dc3545;
+          cursor: pointer;
+          transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .remove-favorite-btn:hover {
+          background: #ffe1e1;
+          transform: translateY(-1px);
+        }
+
+        .favorites-empty {
+          min-height: 64px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          border: 1px dashed rgba(15, 76, 117, 0.25);
+          border-radius: 14px;
+          color: #66717a;
+          background: #f8fafb;
         }
 
         .results-count {
@@ -1068,6 +1597,281 @@ const Packs = () => {
           box-shadow: 0 10px 25px rgba(191, 87, 0, 0.3);
         }
 
+        /* Reviews Section */
+        .pack-reviews-section {
+          margin-top: 56px;
+          padding-top: 42px;
+          border-top: 1px solid rgba(15, 76, 117, 0.12);
+        }
+
+        .reviews-heading {
+          display: flex;
+          justify-content: space-between;
+          gap: 28px;
+          align-items: flex-end;
+          margin-bottom: 22px;
+        }
+
+        .section-kicker {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          color: #0f4c75;
+          font-weight: 700;
+          margin-bottom: 10px;
+        }
+
+        .reviews-heading h2 {
+          margin: 0 0 10px;
+          color: #1e272e;
+          font-size: 2rem;
+        }
+
+        .reviews-heading p {
+          max-width: 640px;
+          margin: 0;
+          color: #666;
+          line-height: 1.6;
+        }
+
+        .reviews-score-card {
+          min-width: 180px;
+          padding: 18px;
+          background: white;
+          border-radius: 16px;
+          box-shadow: 0 8px 28px rgba(15, 76, 117, 0.1);
+          text-align: center;
+        }
+
+        .score-value {
+          display: block;
+          color: #1e272e;
+          font-size: 2rem;
+          font-weight: 800;
+          line-height: 1;
+          margin-bottom: 8px;
+        }
+
+        .score-label {
+          display: block;
+          margin-top: 8px;
+          color: #666;
+          font-size: 0.88rem;
+        }
+
+        .review-stars {
+          display: inline-flex;
+          gap: 3px;
+          color: #ffb84d;
+          vertical-align: middle;
+        }
+
+        .review-stars .star-empty {
+          color: #d4d8dc;
+        }
+
+        .reviews-insights {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+
+        .insight-item {
+          background: white;
+          border: 1px solid rgba(15, 76, 117, 0.08);
+          border-radius: 14px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .insight-value {
+          color: #bf5700;
+          font-size: 1.45rem;
+          font-weight: 800;
+        }
+
+        .insight-label {
+          color: #666;
+          font-size: 0.92rem;
+        }
+
+        .reviews-content {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 360px;
+          gap: 24px;
+          align-items: start;
+        }
+
+        .reviews-list {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 18px;
+        }
+
+        .review-card,
+        .review-form-card {
+          background: white;
+          border: 1px solid rgba(15, 76, 117, 0.08);
+          border-radius: 16px;
+          box-shadow: 0 8px 28px rgba(0, 0, 0, 0.05);
+        }
+
+        .review-card {
+          position: relative;
+          padding: 20px;
+          overflow: hidden;
+        }
+
+        .quote-icon {
+          position: absolute;
+          right: 18px;
+          top: 18px;
+          color: rgba(15, 76, 117, 0.12);
+        }
+
+        .review-card-header {
+          display: flex;
+          justify-content: space-between;
+          gap: 14px;
+          margin-bottom: 14px;
+          padding-right: 34px;
+        }
+
+        .review-card h3 {
+          margin: 0 0 5px;
+          color: #1e272e;
+          font-size: 1rem;
+        }
+
+        .review-card-header span {
+          color: #777;
+          font-size: 0.85rem;
+        }
+
+        .review-comment {
+          margin: 0;
+          color: #3c4650;
+          line-height: 1.65;
+        }
+
+        .review-footer {
+          display: flex;
+          justify-content: space-between;
+          gap: 14px;
+          margin-top: 18px;
+          padding-top: 14px;
+          border-top: 1px solid #eef1f3;
+          color: #777;
+          font-size: 0.85rem;
+        }
+
+        .review-form-card {
+          padding: 22px;
+        }
+
+        .form-header h3 {
+          margin: 0 0 6px;
+          color: #1e272e;
+        }
+
+        .form-header p {
+          margin: 0 0 18px;
+          color: #666;
+          line-height: 1.5;
+          font-size: 0.92rem;
+        }
+
+        .review-form-card label {
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+          margin-bottom: 14px;
+          color: #1e272e;
+          font-weight: 700;
+        }
+
+        .review-form-card input,
+        .review-form-card select,
+        .review-form-card textarea {
+          width: 100%;
+          border: 1px solid #dce3e8;
+          border-radius: 10px;
+          padding: 11px 12px;
+          color: #1e272e;
+          font: inherit;
+          outline: none;
+          background: white;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .review-form-card input:focus,
+        .review-form-card select:focus,
+        .review-form-card textarea:focus {
+          border-color: #0f4c75;
+          box-shadow: 0 0 0 3px rgba(15, 76, 117, 0.12);
+        }
+
+        .review-form-card textarea {
+          resize: vertical;
+          min-height: 110px;
+        }
+
+        .rating-picker {
+          display: flex;
+          gap: 6px;
+        }
+
+        .rating-picker button {
+          width: 38px;
+          height: 38px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #dce3e8;
+          border-radius: 10px;
+          background: white;
+          color: #d4d8dc;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .rating-picker button.active,
+        .rating-picker button:hover {
+          color: #ffb84d;
+          border-color: rgba(255, 184, 77, 0.7);
+          background: rgba(255, 184, 77, 0.12);
+        }
+
+        .review-message {
+          margin: 0 0 14px;
+          color: #0f4c75;
+          font-size: 0.9rem;
+        }
+
+        .submit-review-btn {
+          width: 100%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 13px 16px;
+          border: none;
+          border-radius: 12px;
+          background: linear-gradient(135deg, #0f4c75, #bf5700);
+          color: white;
+          font-weight: 700;
+          cursor: pointer;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .submit-review-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 24px rgba(15, 76, 117, 0.18);
+        }
+
         /* Animations */
         @keyframes fadeInUp {
           from {
@@ -1097,6 +1901,10 @@ const Packs = () => {
 
           .quick-stats {
             grid-template-columns: repeat(2, 1fr);
+          }
+
+          .reviews-content {
+            grid-template-columns: 1fr;
           }
         }
 
@@ -1128,8 +1936,46 @@ const Packs = () => {
             flex-wrap: wrap;
           }
 
+          .favorites-header {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .favorite-item {
+            grid-template-columns: 64px minmax(0, 1fr) 38px;
+          }
+
+          .favorite-item img {
+            width: 64px;
+            height: 64px;
+          }
+
+          .favorite-meta {
+            grid-column: 2 / 3;
+            align-items: flex-start;
+          }
+
           .hero-title {
             font-size: 2rem;
+          }
+
+          .reviews-heading {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .reviews-score-card {
+            min-width: 0;
+          }
+
+          .reviews-insights,
+          .reviews-list {
+            grid-template-columns: 1fr;
+          }
+
+          .review-card-header,
+          .review-footer {
+            flex-direction: column;
           }
         }
       `}</style>

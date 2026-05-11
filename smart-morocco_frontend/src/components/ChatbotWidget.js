@@ -180,7 +180,7 @@ const ChatbotWidget = () => {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         /* ---------- STYLE ÉLÉGANT ---------- */
         .chatbot-fab {
           position: fixed;

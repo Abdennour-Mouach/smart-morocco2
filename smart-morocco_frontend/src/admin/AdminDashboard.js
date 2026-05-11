@@ -70,12 +70,6 @@ const mockReviews = [
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [packs, setPacks] = useState([]);
-  const [hebergements, setHebergements] = useState([]);
-  const [restaurants, setRestaurants] = useState([]);
-  const [transports, setTransports] = useState([]);
-  const [evenements, setEvenements] = useState([]);
-  const [users, setUsers] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -121,12 +115,6 @@ const AdminDashboard = () => {
     setIsLoading(true);
     try {
       setTimeout(() => {
-        setPacks(mockPacks);
-        setHebergements(mockHebergements);
-        setRestaurants(mockRestaurants);
-        setTransports(mockTransports);
-        setEvenements(mockEvenements);
-        setUsers(mockUsers);
         setReservations(mockReservations);
         setReviews(mockReviews);
 
@@ -209,7 +197,7 @@ const AdminDashboard = () => {
       <div className="loading-container">
         <div className="loading-spinner"></div>
         <p>Chargement du tableau de bord...</p>
-        <style jsx>{`
+        <style>{`
           .loading-container {
             min-height: 100vh;
             display: flex;
@@ -434,7 +422,24 @@ const AdminDashboard = () => {
                         Voir tout <ChevronRight size={16} />
                       </button>
                     </div>
-                    
+                    <table className="recent-table">
+                      <thead>
+                        <tr>
+                          <th>Client</th>
+                          <th>Pack</th>
+                          <th>Statut</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reservations.slice(0, 3).map((res) => (
+                          <tr key={res.id_reservation}>
+                            <td>{res.client}</td>
+                            <td>{res.pack}</td>
+                            <td>{getStatusBadge(res.status)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
 
                   <div className="recent-card">
@@ -444,7 +449,24 @@ const AdminDashboard = () => {
                         Voir tout <ChevronRight size={16} />
                       </button>
                     </div>
-                   
+                    <table className="recent-table">
+                      <thead>
+                        <tr>
+                          <th>Client</th>
+                          <th>Note</th>
+                          <th>Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reviews.slice(0, 3).map((rev) => (
+                          <tr key={rev.id_review}>
+                            <td>{rev.client}</td>
+                            <td>{getStarRating(rev.note)}</td>
+                            <td>{formatDate(rev.date)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
@@ -545,7 +567,7 @@ const AdminDashboard = () => {
         </Routes>
       </main>
 
-      <style jsx>{`
+      <style>{`
         /* Vos styles existants restent identiques */
         .admin-dashboard {
           display: flex;

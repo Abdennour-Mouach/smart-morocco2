@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { 
   Calendar,
@@ -45,13 +45,7 @@ const Reservation = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (utilisateurId) {
-      fetchReservations();
-    }
-  }, [utilisateurId]);
-
-  const fetchReservations = async () => {
+  const fetchReservations = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await api.get(`/reservations/utilisateur/${utilisateurId}`);
@@ -78,7 +72,13 @@ const Reservation = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [utilisateurId]);
+
+  useEffect(() => {
+    if (utilisateurId) {
+      fetchReservations();
+    }
+  }, [fetchReservations, utilisateurId]);
 
   // Filtrer et trier les réservations
   useEffect(() => {
@@ -182,7 +182,7 @@ const Reservation = () => {
             <ChevronRight size={18} />
           </Link>
         </div>
-        <style jsx>{`
+        <style>{`
           .login-prompt {
             min-height: 100vh;
             display: flex;
@@ -528,7 +528,7 @@ const Reservation = () => {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .reservations-page {
           background: #faf7f2;
           min-height: 100vh;

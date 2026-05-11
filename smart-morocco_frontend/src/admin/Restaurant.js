@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
-import { Upload, Image as ImageIcon, Plus, Edit, Trash2, X, Search, Utensils, DollarSign, Coffee, MapPin } from "lucide-react";
+import { Upload, Plus, Edit, Trash2, X, Search, Utensils, DollarSign, Coffee, MapPin } from "lucide-react";
 
 const Restaurant = () => {
   const [items, setItems] = useState([]);
@@ -381,7 +381,7 @@ const Restaurant = () => {
       </div>
 
       {/* Styles intégrés */}
-      <style jsx>{`
+      <style>{`
         .restaurant-crud {
           padding: 24px;
           background: #f8f9fa;

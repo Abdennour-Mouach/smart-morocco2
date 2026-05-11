@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/contacts")
@@ -39,5 +40,36 @@ public class ContactController {
         }
         Contact saved = contactService.saveContact(contact);
         return ResponseEntity.ok(saved);
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<Contact> updateContactFlags(@PathVariable Integer id, @RequestBody Map<String, Boolean> payload) {
+        return contactService.getContactById(id)
+                .map(contact -> {
+                    if (payload.containsKey("lu")) {
+                        contact.setLu(payload.get("lu"));
+                    }
+                    if (payload.containsKey("important")) {
+                        contact.setImportant(payload.get("important"));
+                    }
+                    return ResponseEntity.ok(contactService.saveContact(contact));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{id}/reply")
+    public ResponseEntity<?> replyToContact(@PathVariable Integer id, @RequestBody Map<String, String> payload) {
+        return contactService.getContactById(id)
+                .map(contact -> ResponseEntity.ok(Map.of("message", "Reponse enregistree")))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteContact(@PathVariable Integer id) {
+        if (contactService.getContactById(id).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        contactService.deleteContact(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -86,9 +86,12 @@ const Home = () => {
   // Effet pour la vidéo
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.play().catch(error => {
-        console.log("Lecture automatique impossible:", error);
-      });
+      const playPromise = videoRef.current.play();
+      if (playPromise?.catch) {
+        playPromise.catch(error => {
+          console.log("Lecture automatique impossible:", error);
+        });
+      }
     }
   }, []);
 
@@ -439,7 +442,7 @@ const Home = () => {
         </div>
       </section>
       <Footer />
-      <style jsx>{`
+      <style>{`
         .home {
           overflow-x: hidden;
           background: #faf7f2;

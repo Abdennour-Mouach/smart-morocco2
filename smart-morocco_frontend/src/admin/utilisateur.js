@@ -58,7 +58,18 @@ const Utilisateur = () => {
     }
   };
 
-  
+  const startEdit = (user) => {
+    setForm({
+      id_utilisateur: user.id_utilisateur || user.id || "",
+      nom: user.nom || "",
+      prenom: user.prenom || "",
+      email: user.email || "",
+      telephone: user.telephone || "",
+      mot_de_passe: "",
+      role: user.role || "ROLE_USER",
+    });
+    setShowForm(true);
+  };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Supprimer cet utilisateur ?")) return;
@@ -80,6 +91,7 @@ const Utilisateur = () => {
     <div className="user-crud">
       <div className="crud-header">
         <h1><span className="header-icon">👥</span> Gestion des utilisateurs</h1>
+        <button className="btn-add" onClick={() => setShowForm(true)}><Plus size={18} /> Nouvel utilisateur</button>
       </div>
 
       <div className="search-section">
@@ -97,7 +109,10 @@ const Utilisateur = () => {
               <div className="form-row"><div className="form-group"><label>Nom</label><input name="nom" value={form.nom} onChange={handleChange} required /></div><div className="form-group"><label>Prénom</label><input name="prenom" value={form.prenom} onChange={handleChange} /></div></div>
               <div className="form-row"><div className="form-group"><label>Email</label><input type="email" name="email" value={form.email} onChange={handleChange} required /></div><div className="form-group"><label>Téléphone</label><input name="telephone" value={form.telephone} onChange={handleChange} /></div></div>
               <div className="form-row"><div className="form-group"><label>Mot de passe {form.id_utilisateur && "(laisser vide pour inchangé)"}</label><input type="password" name="mot_de_passe" value={form.mot_de_passe} onChange={handleChange} /></div><div className="form-group"><label>Rôle</label><select name="role" value={form.role} onChange={handleChange}><option value="ROLE_USER">Utilisateur</option><option value="ROLE_ADMIN">Administrateur</option></select></div></div>
-              <div className="form-actions"><button type="button" className="btn-cancel" onClick={() => resetForm()}>Annuler</button></div>
+              <div className="form-actions">
+                <button type="button" className="btn-cancel" onClick={() => resetForm()}>Annuler</button>
+                <button type="submit" className="btn-submit">{form.id_utilisateur ? "Modifier" : "Ajouter"}</button>
+              </div>
             </form>
           </div>
         </div>
@@ -117,13 +132,14 @@ const Utilisateur = () => {
               <div className="user-role">{getRoleIcon(user.role)} {user.role === "ROLE_ADMIN" ? "Admin" : "Utilisateur"}</div>
             </div>
             <div className="card-actions">
+              <button className="icon-btn edit" onClick={() => startEdit(user)}><Edit size={16} /></button>
               <button className="icon-btn delete" onClick={() => handleDelete(user.id_utilisateur || user.id)}><Trash2 size={16} /></button>
             </div>
           </div>
         ))}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .user-crud { padding: 24px; background: #f8f9fa; min-height: 100vh; max-width: 1200px; margin: 0 auto; }
         .crud-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
         .crud-header h1 { font-size: 1.8rem; color: #1a2a3a; display: flex; align-items: center; gap: 12px; margin: 0; }

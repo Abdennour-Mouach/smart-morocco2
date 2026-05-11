@@ -1,84 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, User, Calendar, ChevronDown, Settings, LogOut, Heart, Bell, Languages } from "lucide-react";
+import { Menu, X, User, Calendar, ChevronDown, Settings, LogOut, Heart, Bell, Languages, Check } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
-  const [language, setLanguage] = useState(() => {
-    return localStorage.getItem("language") || "fr";
-  });
+  const { language, currentLanguage, languages, setLanguage, t } = useLanguage();
   const location = useLocation();
   const profileMenuRef = useRef(null);
-
-  // Translations
-  const translations = {
-    fr: {
-      nav: {
-        home: "Accueil",
-        about: "A propos",
-        contact: "Contact",
-        packs: "Packs",
-        reservation: "Réservation",
-      },
-      auth: {
-        login: "Connexion",
-        register: "Inscription",
-        profile: "Profil",
-        myReservations: "Mes Réservations",
-        settings: "Paramètres",
-        logout: "Déconnexion",
-      },
-      profile: {
-        myProfile: "Mon Profil",
-        myReservations: "Mes Réservations",
-        settings: "Paramètres",
-        logout: "Déconnexion",
-      },
-      notifications: {
-        title: "Notifications",
-        noNotifications: "Aucune notification",
-        markAsRead: "Marquer comme lue",
-      },
-      likes: {
-        title: "J'adore",
-      },
-    },
-    en: {
-      nav: {
-        home: "Home",
-        about: "About",
-        contact: "Contact",
-        packs: "Packs",
-        reservation: "Reservation",
-      },
-      auth: {
-        login: "Login",
-        register: "Register",
-        profile: "Profile",
-        myReservations: "My Reservations",
-        settings: "Settings",
-        logout: "Logout",
-      },
-      profile: {
-        myProfile: "My Profile",
-        myReservations: "My Reservations",
-        settings: "Settings",
-        logout: "Logout",
-      },
-      notifications: {
-        title: "Notifications",
-        noNotifications: "No notifications",
-        markAsRead: "Mark as read",
-      },
-      likes: {
-        title: "Like",
-      },
-    },
-  };
-
-  const t = translations[language];
+  const languageMenuRef = useRef(null);
 
   useEffect(() => {
     try {
@@ -89,15 +22,14 @@ const Navbar = () => {
     }
   }, [location.pathname]);
 
-  useEffect(() => {
-    localStorage.setItem("language", language);
-  }, [language]);
-
-  // Click outside handler for profile menu only
+  // Close floating menus when the user clicks elsewhere.
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setIsProfileMenuOpen(false);
+      }
+      if (languageMenuRef.current && !languageMenuRef.current.contains(event.target)) {
+        setIsLanguageMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -128,8 +60,10 @@ const Navbar = () => {
 
   const isActive = (path) => location.pathname === path;
 
-  const toggleLanguage = () => {
-    setLanguage(prev => prev === "fr" ? "en" : "fr");
+  const selectLanguage = (nextLanguage) => {
+    setLanguage(nextLanguage);
+    setIsLanguageMenuOpen(false);
+    setIsOpen(false);
   };
 
   return (
@@ -156,15 +90,49 @@ const Navbar = () => {
         {/* Right Section: Langue, J'adore, Notifications, Profil */}
         <div className="right-section">
           {/* Language Switcher */}
-          <button className="icon-btn language-btn" onClick={toggleLanguage} title={language === "fr" ? "English" : "Français"}>
-            <Languages size={20} />
-            <span className="language-text">{language.toUpperCase()}</span>
-          </button>
+          <div className="language-switcher" ref={languageMenuRef}>
+            <button
+              className="icon-btn language-btn"
+              onClick={() => {
+                setIsProfileMenuOpen(false);
+                setIsLanguageMenuOpen((open) => !open);
+              }}
+              title={`${t.language.current}: ${currentLanguage.label}`}
+              aria-label={t.language.choose}
+              aria-haspopup="listbox"
+              aria-expanded={isLanguageMenuOpen}
+            >
+              <Languages size={20} />
+              <span className="language-text">{currentLanguage.short}</span>
+              <ChevronDown size={14} className={`language-chevron ${isLanguageMenuOpen ? "open" : ""}`} />
+            </button>
 
-          {/* J'adore Icon (static, no events) */}
-          <div className="icon-btn like-btn" title={t.likes.title}>
-            <Heart size={20} />
+            {isLanguageMenuOpen && (
+              <div className="language-menu" role="listbox" aria-label={t.language.choose}>
+                {languages.map((item) => (
+                  <button
+                    key={item.code}
+                    type="button"
+                    role="option"
+                    aria-selected={item.code === language}
+                    lang={item.locale}
+                    dir={item.dir}
+                    className={`language-option ${item.code === language ? "active" : ""}`}
+                    onClick={() => selectLanguage(item.code)}
+                  >
+                    <span className="language-option-code">{item.short}</span>
+                    <span className="language-option-label">{item.label}</span>
+                    {item.code === language && <Check size={16} className="language-option-check" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+
+          {/* Favorites */}
+          <Link to="/profile" className="icon-btn like-btn" title={t.likes.title} aria-label="Voir mes favoris">
+            <Heart size={20} />
+          </Link>
 
           {/* Notification Icon (static, no events) */}
           <div className="icon-btn notification-btn" title={t.notifications.title}>
@@ -177,7 +145,10 @@ const Navbar = () => {
               <div className="profile-container">
                 <button
                   className="profile-button"
-                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                  onClick={() => {
+                    setIsLanguageMenuOpen(false);
+                    setIsProfileMenuOpen(!isProfileMenuOpen);
+                  }}
                 >
                   <div className="profile-avatar">
                     {user.prenom?.charAt(0)}{user.nom?.charAt(0)}
@@ -246,14 +217,30 @@ const Navbar = () => {
             <span>{link.label}</span>
           </Link>
         ))}
-        {/* Mobile language toggle */}
-        <button onClick={toggleLanguage} className="mobile-link mobile-language-btn">
-          <Languages size={18} />
-          <span>{language === "fr" ? "English" : "Français"}</span>
-        </button>
+        <div className="mobile-language-panel">
+          <div className="mobile-language-title">
+            <Languages size={18} />
+            <span>{t.language.choose}</span>
+          </div>
+          <div className="mobile-language-options">
+            {languages.map((item) => (
+              <button
+                key={item.code}
+                type="button"
+                lang={item.locale}
+                dir={item.dir}
+                className={`mobile-language-option ${item.code === language ? "active" : ""}`}
+                onClick={() => selectLanguage(item.code)}
+              >
+                <span>{item.short}</span>
+                {item.code === language && <Check size={14} />}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .navbar {
           position: fixed;
           top: 0;
@@ -320,10 +307,11 @@ const Navbar = () => {
           align-items: center;
           justify-content: center;
           transition: all 0.3s ease;
+          text-decoration: none;
         }
 
         /* For static icons (no cursor pointer) */
-        .icon-btn:not(button) {
+        .icon-btn:not(button):not(a) {
           cursor: default;
         }
 
@@ -337,11 +325,81 @@ const Navbar = () => {
           border-radius: 20px;
           padding: 0.5rem 0.8rem;
           cursor: pointer;
+          min-width: 78px;
         }
 
         .language-text {
           font-size: 0.8rem;
           font-weight: 600;
+        }
+
+        .language-switcher {
+          position: relative;
+        }
+
+        .language-chevron {
+          transition: transform 0.25s ease;
+        }
+
+        .language-chevron.open {
+          transform: rotate(180deg);
+        }
+
+        .language-menu {
+          position: absolute;
+          top: calc(100% + 10px);
+          right: 0;
+          width: 190px;
+          padding: 8px;
+          background: white;
+          border: 1px solid rgba(15, 76, 117, 0.12);
+          border-radius: 14px;
+          box-shadow: 0 12px 35px rgba(0, 0, 0, 0.14);
+          z-index: 1001;
+          animation: slideDown 0.25s ease;
+        }
+
+        .language-option {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px;
+          border: none;
+          border-radius: 10px;
+          background: transparent;
+          color: #1e272e;
+          cursor: pointer;
+          text-align: left;
+          transition: all 0.2s ease;
+        }
+
+        .language-option:hover,
+        .language-option.active {
+          background: rgba(15, 76, 117, 0.1);
+          color: #0f4c75;
+        }
+
+        .language-option-code {
+          width: 34px;
+          height: 26px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          background: #f3f6f8;
+          font-size: 0.72rem;
+          font-weight: 700;
+        }
+
+        .language-option-label {
+          flex: 1;
+          font-size: 0.92rem;
+          font-weight: 600;
+        }
+
+        .language-option-check {
+          color: #0f4c75;
         }
 
         /* Profile Section */
@@ -571,9 +629,47 @@ const Navbar = () => {
           font-weight: 600;
         }
 
-        .mobile-language-btn {
-          margin-top: 8px;
-          justify-content: flex-start;
+        .mobile-language-panel {
+          margin-top: 10px;
+          padding: 12px;
+          border-top: 1px solid rgba(15, 76, 117, 0.1);
+        }
+
+        .mobile-language-title {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 10px;
+          color: #1e272e;
+          font-weight: 600;
+        }
+
+        .mobile-language-options {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .mobile-language-option {
+          min-height: 42px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          border: 1px solid rgba(15, 76, 117, 0.15);
+          border-radius: 10px;
+          background: white;
+          color: #1e272e;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .mobile-language-option.active,
+        .mobile-language-option:hover {
+          border-color: #0f4c75;
+          background: rgba(15, 76, 117, 0.1);
+          color: #0f4c75;
         }
 
         @keyframes slideDown {

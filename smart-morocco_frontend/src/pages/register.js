@@ -37,9 +37,12 @@ const Register = () => {
   // Lecture automatique de la vidéo
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.play().catch(error => {
-        console.log("Lecture automatique impossible:", error);
-      });
+      const playPromise = videoRef.current.play();
+      if (playPromise?.catch) {
+        playPromise.catch(error => {
+          console.log("Lecture automatique impossible:", error);
+        });
+      }
     }
   }, []);
 
@@ -452,7 +455,7 @@ const Register = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .register-page {
           display: flex;
           min-height: 100vh;

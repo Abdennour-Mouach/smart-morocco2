@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
-import { Plus, Edit, Trash2, X, Search, Bus, Calendar, Clock, MapPin, DollarSign } from "lucide-react";
+import { Plus, Edit, Trash2, X, Search, Bus, Calendar, MapPin, DollarSign } from "lucide-react";
 
 const Transport = () => {
   const [items, setItems] = useState([]);
@@ -200,7 +200,7 @@ const Transport = () => {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .transport-crud { padding: 24px; background: #f8f9fa; min-height: 100vh; max-width: 1400px; margin: 0 auto; }
         .crud-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
         .crud-header h1 { font-size: 1.8rem; color: #1a2a3a; display: flex; align-items: center; gap: 12px; margin: 0; }

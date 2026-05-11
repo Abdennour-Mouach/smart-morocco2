@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import AdminDashboard from "./admin/AdminDashboard"; 
 import Footer from "./pages/Footer";
 import ChatbotWidget from "./components/ChatbotWidget";
+import { LanguageProvider } from "./i18n/LanguageContext";
 
 function Layout() {
   const location = useLocation();
@@ -63,9 +64,11 @@ function Layout() {
 
 function App() {
   return (
-    <Router>
-      <Layout />
-    </Router>
+    <LanguageProvider>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <Layout />
+      </Router>
+    </LanguageProvider>
   );
 }
 

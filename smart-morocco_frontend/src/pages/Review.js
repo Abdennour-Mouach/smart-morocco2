@@ -242,7 +242,7 @@ const handlePhotoUpload = (event) => {
             <ChevronRight size={18} />
           </Link>
         </div>
-        <style jsx>{`
+        <style>{`
           .login-prompt {
             min-height: 100vh;
             display: flex;
@@ -629,7 +629,7 @@ const handlePhotoUpload = (event) => {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .reviews-page {
           background: #faf7f2;
           min-height: 100vh;

@@ -27,9 +27,15 @@ const defaultPack = {
   discount: 25
 };
 
-const PackCard = ({ pack }) => {
-  const [isLiked, setIsLiked] = useState(false);
+const toNumber = (value, fallback) => {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : fallback;
+};
+
+const PackCard = ({ pack, isFavorite = false, onToggleFavorite }) => {
+  const [localIsLiked, setLocalIsLiked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const isLiked = onToggleFavorite ? isFavorite : localIsLiked;
 
   const data = useMemo(() => {
     if (!pack) {
@@ -40,6 +46,9 @@ const PackCard = ({ pack }) => {
     if (pack.id_hebergement) includes.push("Hebergement");
     if (pack.id_restaurant) includes.push("Restaurant");
     if (pack.id_activite) includes.push("Activite");
+
+    const rating = toNumber(pack.noteMoyenne ?? pack.rating, 4.7);
+    const reviews = toNumber(pack.nombreAvis ?? pack.reviews, 0);
 
     return {
       id: pack.id,
@@ -52,8 +61,8 @@ const PackCard = ({ pack }) => {
       duration: pack.duree ? `${pack.duree} jours` : "Duree a definir",
       nights: pack.duree ? `${Math.max(pack.duree - 1, 0)} nuits` : "",
       people: "2-8 personnes",
-      rating: 4.7,
-      reviews: 0,
+      rating,
+      reviews,
       image: pack.imageUrl || "/images/ESSAOUIRA.jpg",
       badge: "Populaire",
       includes: includes.length > 0 ? includes : ["Hebergement", "Restaurant", "Guide"],
@@ -67,6 +76,21 @@ const PackCard = ({ pack }) => {
   if (!data) {
     return null;
   }
+
+  const handleFavoriteClick = (event) => {
+    event.stopPropagation();
+
+    if (onToggleFavorite) {
+      onToggleFavorite(pack);
+      return;
+    }
+
+    setLocalIsLiked((current) => !current);
+  };
+
+  const handleShareClick = (event) => {
+    event.stopPropagation();
+  };
 
   return (
     <div
@@ -96,12 +120,13 @@ const PackCard = ({ pack }) => {
         <div className="image-actions">
           <button
             className={`action-btn ${isLiked ? "liked" : ""}`}
-            onClick={() => setIsLiked(!isLiked)}
-            aria-label="Ajouter aux favoris"
+            onClick={handleFavoriteClick}
+            aria-label={isLiked ? "Retirer des favoris" : "Ajouter aux favoris"}
+            aria-pressed={isLiked}
           >
             <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
           </button>
-          <button className="action-btn" aria-label="Partager">
+          <button className="action-btn" aria-label="Partager" onClick={handleShareClick}>
             <Share2 size={18} />
           </button>
         </div>
@@ -128,7 +153,7 @@ const PackCard = ({ pack }) => {
             </p>
           </div>
           <div className="card-rating">
-            <span className="rating-score">{data.rating}</span>
+            <span className="rating-score">{data.rating.toFixed(1)}</span>
             <div className="rating-stars">
               {[...Array(5)].map((_, i) => (
                 <Star
@@ -194,7 +219,7 @@ const PackCard = ({ pack }) => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .pack-card {
           position: relative;
           background: white;

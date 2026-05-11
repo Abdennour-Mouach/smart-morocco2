@@ -72,7 +72,7 @@ const About = () => {
 
       <Footer />
 
-      <style jsx>{`
+      <style>{`
         .about-page {
           background: linear-gradient(145deg, #fdf9f4 0%, #fff6ed 100%);
           padding: 140px 20px 100px;

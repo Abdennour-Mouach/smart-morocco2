@@ -2,6 +2,8 @@ package com.example.smart_morocco.model;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "contact")
 public class Contact {
@@ -18,7 +20,27 @@ public class Contact {
     @Column(columnDefinition = "TEXT")
     private String message;
 
+    private Boolean lu = false;
+    private Boolean important = false;
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (lu == null) {
+            lu = false;
+        }
+        if (important == null) {
+            important = false;
+        }
+    }
+
     // Getters & Setters
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
+
     public Integer getId_contact() { return id; }
     public void setId_contact(Integer id) { this.id = id; }
 
@@ -33,4 +55,13 @@ public class Contact {
 
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }
+
+    public Boolean getLu() { return lu; }
+    public void setLu(Boolean lu) { this.lu = lu; }
+
+    public Boolean getImportant() { return important; }
+    public void setImportant(Boolean important) { this.important = important; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

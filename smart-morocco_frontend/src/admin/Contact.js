@@ -8,7 +8,6 @@ import {
   Trash2,
   X,
   Search,
-  Filter,
   Star,
   Eye,
   Inbox,
@@ -262,6 +261,15 @@ const ContactAdmin = () => {
             <div className="loading-spinner">
               <div className="spinner"></div>
             </div>
+          ) : error ? (
+            <div className="empty-state error-state">
+              <AlertCircle size={80} />
+              <h3>{error}</h3>
+              <p>VÃ©rifiez la connexion au serveur puis rÃ©essayez.</p>
+              <button className="filter-btn" onClick={load}>
+                <RefreshCw size={16} /> Recharger
+              </button>
+            </div>
           ) : filteredItems.length === 0 ? (
             <div className="empty-state">
               <Mail size={80} />
@@ -332,6 +340,13 @@ const ContactAdmin = () => {
                     </td>
                     <td>
                       <div className="action-buttons">
+                        <button
+                          className={`action-btn important ${msg.important ? "active" : ""}`}
+                          onClick={(e) => toggleImportant(msg.id, e)}
+                          title={msg.important ? "Retirer des importants" : "Marquer comme important"}
+                        >
+                          <Star size={16} />
+                        </button>
                         <button
                           className="action-btn view"
                           onClick={(e) => {
@@ -475,7 +490,7 @@ const ContactAdmin = () => {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         /* ------------------------------------------------------------
    THÈME PERSONNALISÉ : Dégradé #0f4c75 → #bf5700
 ------------------------------------------------------------ */
@@ -900,6 +915,18 @@ tr:hover .action-buttons {
   border-color: rgba(15, 76, 117, 0.2);
 }
 
+.action-btn.important {
+  color: var(--warning);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.action-btn.important.active,
+.action-btn.important:hover {
+  background: var(--warning);
+  color: white;
+  border-color: transparent;
+}
+
 .action-btn.view:hover {
   background: linear-gradient(135deg, #0f4c75, #bf5700);
   color: white;
@@ -983,6 +1010,10 @@ tr:hover .action-buttons {
 .empty-state p {
   color: var(--text-muted);
   margin-bottom: 2rem;
+}
+
+.error-state svg {
+  color: var(--danger);
 }
 
 /* Loading */
